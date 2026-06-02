@@ -121,6 +121,24 @@ body::before {
     box-shadow: var(--shadow);
 }
 
+.scroll-progress {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 2px;
+    background: rgba(255, 255, 255, 0.08);
+    overflow: hidden;
+}
+
+.scroll-progress__bar {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    box-shadow: 0 0 18px rgba(110, 231, 255, 0.22);
+    transition: width var(--dur-fast) linear;
+}
+
 .nav-container {
     display: flex;
     justify-content: space-between;
@@ -535,10 +553,93 @@ body::before {
     font-size: 0.9rem;
 }
 
+.lightbox {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    display: none;
+}
+
+.lightbox.is-open {
+    display: block;
+}
+
+.lightbox__backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.62);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+.lightbox__dialog {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: min(980px, calc(100% - 2rem));
+    background: rgba(8, 15, 31, 0.82);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-2);
+    padding: 1.1rem 1.1rem 1.25rem;
+}
+
+.lightbox__close {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    width: 40px;
+    height: 40px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--text);
+    cursor: pointer;
+    transition: transform var(--dur-fast) var(--ease), background var(--dur-fast) var(--ease);
+}
+
+.lightbox__close:hover {
+    transform: translateY(-1px);
+    background: rgba(255, 255, 255, 0.09);
+}
+
+.lightbox__image {
+    width: 100%;
+    max-height: 72vh;
+    object-fit: contain;
+    border-radius: calc(var(--radius) - 6px);
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.lightbox__image.is-rotated {
+    transform: rotate(-90deg);
+    max-height: 62vh;
+}
+
+.lightbox__caption {
+    margin-top: 0.9rem;
+    color: var(--text-soft);
+    text-align: center;
+}
+
+body.lightbox-open {
+    overflow: hidden;
+}
+
 /* =========================================================
    Animations (scroll-reveal + micro-interactions)
    ========================================================= */
 .reveal {
+    opacity: 1;
+    transform: none;
+    filter: none;
+}
+
+.js .reveal {
     opacity: 0;
     transform: translateY(26px);
     filter: blur(6px);
@@ -547,10 +648,24 @@ body::before {
     will-change: opacity, transform, filter;
 }
 
-.reveal.active {
+.use-gsap .js .reveal {
+    transition: none;
+}
+
+.js .reveal.reveal--left { transform: translateX(-28px); }
+.js .reveal.reveal--right { transform: translateX(28px); }
+.js .reveal.reveal--scale { transform: scale(0.965); }
+
+.js .reveal.active {
     opacity: 1;
     transform: translateY(0);
     filter: blur(0);
+}
+
+.js .reveal.active.reveal--left,
+.js .reveal.active.reveal--right,
+.js .reveal.active.reveal--scale {
+    transform: none;
 }
 
 @keyframes floaty {
@@ -565,7 +680,7 @@ body::before {
 /* Reduced motion support */
 @media (prefers-reduced-motion: reduce) {
     html { scroll-behavior: auto; }
-    .reveal { opacity: 1; transform: none; filter: none; transition: none; }
+    .js .reveal { opacity: 1; transform: none; filter: none; transition: none; }
     .hero-quote { animation: none; }
     * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
 }
@@ -591,7 +706,22 @@ body::before {
     }
 
     .memories-grid {
-        grid-template-columns: 1fr;
+        display: flex;
+        gap: 1rem;
+        overflow-x: auto;
+        padding: 0 0.25rem 0.75rem;
+        scroll-snap-type: x mandatory;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+    }
+
+    .memories-grid::-webkit-scrollbar {
+        display: none;
+    }
+
+    .memory-card {
+        flex: 0 0 86%;
+        scroll-snap-align: center;
     }
 
     .section {
