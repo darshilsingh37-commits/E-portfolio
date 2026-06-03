@@ -2,7 +2,10 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#050b14">
+    <meta name="color-scheme" content="dark">
+    <meta name="description" content="Darshil Singh — Class X student at Gayatri Public School. Portfolio showcasing academics, achievements, and reflections.">
     <title>Darshil Singh | Student Portfolio</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -11,8 +14,51 @@
     <link rel="stylesheet" href="styles.css">
     <script>document.documentElement.classList.add('js');</script>
 </head>
-<body>
-    <!-- Background Video Layer (decorative) -->
+<body data-theme="aurora">
+    <!-- =====================================================
+         SVG Defs (gradients, etc.)
+         ===================================================== -->
+    <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+        <defs>
+            <linearGradient id="dockGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="var(--accent)" />
+                <stop offset="100%" stop-color="var(--accent-2)" />
+            </linearGradient>
+        </defs>
+    </svg>
+
+    <!-- =====================================================
+         Preloader
+         ===================================================== -->
+    <div class="preloader" id="preloader" aria-hidden="true">
+        <div class="preloader__inner">
+            <div class="preloader__mark" aria-hidden="true">
+                <span class="preloader__char" data-text="D">D</span>
+                <span class="preloader__char" data-text="S">S</span>
+            </div>
+            <div class="preloader__bar"><span class="preloader__fill"></span></div>
+            <p class="preloader__text">Preparing your experience</p>
+        </div>
+    </div>
+
+    <!-- =====================================================
+         Click Ripple Container
+         ===================================================== -->
+    <div class="ripple-layer" id="rippleLayer" aria-hidden="true"></div>
+
+    <!-- =====================================================
+         Custom Cursor + Trail
+         ===================================================== -->
+    <div class="cursor" id="cursor" aria-hidden="true">
+        <div class="cursor__dot"></div>
+        <div class="cursor__ring"></div>
+        <span class="cursor__label"></span>
+    </div>
+    <div class="cursor-trail" id="cursorTrail" aria-hidden="true"></div>
+
+    <!-- =====================================================
+         Background Video + Particle Canvas
+         ===================================================== -->
     <div class="bg-video" aria-hidden="true">
         <video autoplay muted loop playsinline preload="metadata">
             <source src="assets/bg-video.mp4" type="video/mp4">
@@ -20,21 +66,58 @@
         <div class="bg-overlay"></div>
     </div>
 
-    <!-- Navigation -->
-    <header class="navbar">
-        <nav class="nav-container">
-            <div class="logo">DS</div>
+    <canvas id="particles" class="particles" aria-hidden="true"></canvas>
+
+    <!-- Floating decorative shapes (parallax) -->
+    <div class="floaters" aria-hidden="true">
+        <span class="floater floater--1"></span>
+        <span class="floater floater--2"></span>
+        <span class="floater floater--3"></span>
+        <span class="floater floater--4"></span>
+    </div>
+
+    <!-- =====================================================
+         Section dividers (wave SVG, decorative)
+         ===================================================== -->
+    <svg class="section-divider section-divider--top" viewBox="0 0 1440 80" preserveAspectRatio="none" aria-hidden="true">
+        <path d="M0,40 C360,80 720,0 1080,40 C1260,60 1380,40 1440,40 L1440,80 L0,80 Z" fill="rgba(255,255,255,0.02)"/>
+    </svg>
+
+    <!-- =====================================================
+         Certificate Hover Preview
+         ===================================================== -->
+    <div class="cert-preview" id="certPreview" aria-hidden="true">
+        <img id="certPreviewImg" alt="">
+        <span class="cert-preview__label">View</span>
+    </div>
+
+    <!-- =====================================================
+         Navigation
+         ===================================================== -->
+    <header class="navbar" id="navbar">
+        <nav class="nav-container" aria-label="Primary">
+            <a class="logo magnetic" href="#home" aria-label="Go to top">
+                <span class="logo__text" data-text="DS">DS</span>
+            </a>
             <ul class="nav-links">
-                <li><a href="#home">Home</a></li>
-                <li><a href="#about">About Me</a></li>
-                <li><a href="#academic">Academic Work</a></li>
-                <li><a href="#achievements">Achievements</a></li>
-                <li><a href="#co-curricular">Co-Curriculars</a></li>
-                <li><a href="#reflection">Reflection</a></li>
-                <li><a href="#memories">Memories</a></li>
+                <li><a class="magnetic" href="#home">Home</a></li>
+                <li><a class="magnetic" href="#about">About Me</a></li>
+                <li><a class="magnetic" href="#academic">Academic Work</a></li>
+                <li><a class="magnetic" href="#achievements">Achievements</a></li>
+                <li><a class="magnetic" href="#co-curricular">Co-Curriculars</a></li>
+                <li><a class="magnetic" href="#reflection">Reflection</a></li>
+                <li><a class="magnetic" href="#memories">Memories</a></li>
             </ul>
-            <div class="menu-toggle">
-                <i class="fas fa-bars"></i>
+            <div class="nav-meta">
+                <div class="live-clock" id="liveClock" aria-label="Current time">
+                    <i class="far fa-clock" aria-hidden="true"></i>
+                    <span data-clock>--:--</span>
+                </div>
+                <button class="menu-toggle" id="menuToggle" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="drawer">
+                    <span class="menu-toggle__bar"></span>
+                    <span class="menu-toggle__bar"></span>
+                    <span class="menu-toggle__bar"></span>
+                </button>
             </div>
         </nav>
         <div class="scroll-progress" aria-hidden="true">
@@ -42,12 +125,87 @@
         </div>
     </header>
 
+    <!-- =====================================================
+         Section Mini-Nav (right side dots)
+         ===================================================== -->
+    <nav class="section-nav" id="sectionNav" aria-label="Section navigation">
+        <ul>
+            <li><a class="section-nav__dot" href="#home" data-section-label="Home"><span class="section-nav__pulse"></span><span class="section-nav__label">Home</span></a></li>
+            <li><a class="section-nav__dot" href="#about" data-section-label="About Me"><span class="section-nav__pulse"></span><span class="section-nav__label">About Me</span></a></li>
+            <li><a class="section-nav__dot" href="#academic" data-section-label="Academic Work"><span class="section-nav__pulse"></span><span class="section-nav__label">Academic Work</span></a></li>
+            <li><a class="section-nav__dot" href="#achievements" data-section-label="Achievements"><span class="section-nav__pulse"></span><span class="section-nav__label">Achievements</span></a></li>
+            <li><a class="section-nav__dot" href="#co-curricular" data-section-label="Co-Curriculars"><span class="section-nav__pulse"></span><span class="section-nav__label">Co-Curriculars</span></a></li>
+            <li><a class="section-nav__dot" href="#reflection" data-section-label="Reflection"><span class="section-nav__pulse"></span><span class="section-nav__label">Reflection</span></a></li>
+            <li><a class="section-nav__dot" href="#memories" data-section-label="Memories"><span class="section-nav__pulse"></span><span class="section-nav__label">Memories</span></a></li>
+        </ul>
+        <div class="section-nav__progress" aria-hidden="true">
+            <div class="section-nav__progress-fill" id="sectionProgressFill"></div>
+        </div>
+    </nav>
+
+    <!-- =====================================================
+         Floating Action Dock
+         ===================================================== -->
+    <div class="dock" id="dock" aria-label="Quick actions">
+        <button class="dock__btn magnetic" id="themeBtn" type="button" aria-label="Change theme" data-cursor="Theme">
+            <i class="fas fa-palette"></i>
+            <span class="dock__tip">Theme</span>
+        </button>
+        <button class="dock__btn magnetic" id="soundBtn" type="button" aria-label="Toggle sound" data-cursor="Sound" aria-pressed="false">
+            <i class="fas fa-volume-xmark"></i>
+            <span class="dock__tip">Sound</span>
+        </button>
+        <button class="dock__btn magnetic" id="cvBtn" type="button" aria-label="Download CV" data-cursor="Download CV">
+            <i class="fas fa-file-arrow-down"></i>
+            <span class="dock__tip">Download CV</span>
+        </button>
+        <button class="dock__btn magnetic" id="backTop" type="button" aria-label="Back to top" data-cursor="Top">
+            <i class="fas fa-arrow-up"></i>
+            <span class="dock__tip">Top</span>
+        </button>
+    </div>
+
+    <!-- =====================================================
+         Mobile Drawer
+         ===================================================== -->
+    <aside class="drawer" id="drawer" aria-hidden="true" aria-label="Mobile navigation">
+        <div class="drawer__backdrop" data-drawer-close></div>
+        <div class="drawer__panel" role="dialog" aria-modal="true">
+            <div class="drawer__head">
+                <span class="logo logo--small">DS</span>
+                <button class="drawer__close" data-drawer-close type="button" aria-label="Close menu">
+                    <i class="fas fa-xmark"></i>
+                </button>
+            </div>
+            <ul class="drawer__links">
+                <li><a class="drawer__link" href="#home" data-drawer-close><span>01</span>Home</a></li>
+                <li><a class="drawer__link" href="#about" data-drawer-close><span>02</span>About Me</a></li>
+                <li><a class="drawer__link" href="#academic" data-drawer-close><span>03</span>Academic Work</a></li>
+                <li><a class="drawer__link" href="#achievements" data-drawer-close><span>04</span>Achievements</a></li>
+                <li><a class="drawer__link" href="#co-curricular" data-drawer-close><span>05</span>Co-Curriculars</a></li>
+                <li><a class="drawer__link" href="#reflection" data-drawer-close><span>06</span>Reflection</a></li>
+                <li><a class="drawer__link" href="#memories" data-drawer-close><span>07</span>Memories</a></li>
+            </ul>
+            <div class="drawer__foot">
+                <p>DARSHIL SINGH</p>
+                <p>Class X — Gayatri Public School</p>
+            </div>
+        </div>
+    </aside>
+
     <main>
-        <!-- Hero Section -->
+        <!-- =====================================================
+             Hero Section
+             ===================================================== -->
         <section id="home" class="hero">
+            <div class="hero__glow" id="heroGlow" aria-hidden="true"></div>
+            <div class="hero__grid" aria-hidden="true"></div>
             <div class="hero-content reveal">
-                <p class="subtitle">MY STUDENT PORTFOLIO</p>
-                <h1 class="main-title">DARSHIL SINGH</h1>
+                <p class="subtitle">
+                    <span class="subtitle__line"></span>
+                    MY STUDENT PORTFOLIO
+                </p>
+                <h1 class="main-title" data-split data-scramble>DARSHIL SINGH</h1>
                 <p class="tagline">CLASS - X STUDENT | PROBLEM SOLVER | LOGICAL THINKER</p>
                 <div class="hero-quote">
                     <span>"Building ideas into reality."</span>
@@ -57,13 +215,34 @@
                     <p class="school-name">GAYATRI PUBLIC SCHOOL</p>
                     <p class="year">2026-27</p>
                 </div>
+                <div class="hero__cta">
+                    <a class="btn btn--primary magnetic" href="#about">
+                        <span>Explore Portfolio</span>
+                        <i class="fas fa-arrow-right"></i>
+                    </a>
+                    <a class="btn btn--ghost magnetic" href="#achievements">
+                        <span>View Achievements</span>
+                    </a>
+                    <button class="btn btn--ghost magnetic" id="heroContactBtn" type="button" data-cursor="Contact">
+                        <i class="fas fa-paper-plane"></i>
+                        <span>Contact Me</span>
+                    </button>
+                </div>
             </div>
+            <a class="hero-scroll" href="#about" aria-label="Scroll to About section">
+                <span class="hero-scroll__mouse" aria-hidden="true">
+                    <span class="hero-scroll__wheel"></span>
+                </span>
+                <span class="hero-scroll__text">Scroll Down</span>
+            </a>
         </section>
 
-        <!-- About Me Section -->
-        <section id="about" class="section reveal">
+        <!-- =====================================================
+             About Me
+             ===================================================== -->
+        <section id="about" class="section reveal" data-section-accent="aurora">
             <div class="container">
-                <h2 class="section-heading">ABOUT ME</h2>
+                <h2 class="section-heading" data-reveal-heading>ABOUT ME</h2>
                 <div class="about-grid">
                     <div class="about-text">
                         <p>Hello! I am Darshil Singh, a student of Class X-B at Gayatri Public School. I am a curious learner who enjoys exploring concepts that challenge my thinking and expand my understanding of the world.</p>
@@ -75,15 +254,18 @@
             </div>
         </section>
 
-        <!-- Academic Work Section -->
-        <section id="academic" class="section reveal bg-soft">
+        <!-- =====================================================
+             Academic Work
+             ===================================================== -->
+        <section id="academic" class="section reveal bg-soft" data-section-accent="sunset">
             <div class="container">
-                <h2 class="section-heading">ACADEMIC WORK</h2>
+                <h2 class="section-heading" data-reveal-heading>ACADEMIC WORK</h2>
                 <p class="section-subheading">Projects • Assignments • Presentations • Practical Work</p>
-                
+
                 <div class="academic-grid">
-                    <!-- Science -->
-                    <div class="card">
+                    <article class="card tilt" data-tilt data-tilt-max="8" data-tilt-glare data-tilt-scale="1.01" data-cursor="View">
+                        <div class="card__shine" aria-hidden="true"></div>
+                        <div class="card__corner" aria-hidden="true"></div>
                         <div class="card-icon"><i class="fas fa-atom"></i></div>
                         <h3>SCIENCE</h3>
                         <p>This section includes my academic work related to SCIENCE. This subject has helped me develop analytical thinking, curiosity, and problem-solving skills.</p>
@@ -94,10 +276,11 @@
                             <li>Science Project Work</li>
                             <li>Multiple assessments (SEA)</li>
                         </ul>
-                    </div>
+                    </article>
 
-                    <!-- Mathematics -->
-                    <div class="card">
+                    <article class="card tilt" data-tilt data-tilt-max="8" data-tilt-glare data-tilt-scale="1.01" data-cursor="View">
+                        <div class="card__shine" aria-hidden="true"></div>
+                        <div class="card__corner" aria-hidden="true"></div>
                         <div class="card-icon"><i class="fas fa-square-root-variable"></i></div>
                         <h3>MATHEMATICS</h3>
                         <p>Mathematics has helped me improve logical reasoning and accuracy. I have developed better problem-solving techniques and confidence in calculations.</p>
@@ -109,10 +292,11 @@
                             <li>Multiple assessments (SEA)</li>
                             <li>Lab activities</li>
                         </ul>
-                    </div>
+                    </article>
 
-                    <!-- Social Science -->
-                    <div class="card">
+                    <article class="card tilt" data-tilt data-tilt-max="8" data-tilt-glare data-tilt-scale="1.01" data-cursor="View">
+                        <div class="card__shine" aria-hidden="true"></div>
+                        <div class="card__corner" aria-hidden="true"></div>
                         <div class="card-icon"><i class="fas fa-globe-americas"></i></div>
                         <h3>SOCIAL SCIENCE</h3>
                         <p>Social Science has helped me understand history, geography, political systems, and economic development. I have developed a better understanding of society.</p>
@@ -122,38 +306,40 @@
                             <li>History Assignments and Projects</li>
                             <li>Civics and Economics Notes</li>
                             <li>Presentations and Class Activities</li>
-                            <li>Multiple Assessments & Group Activities</li>
+                            <li>Multiple Assessments &amp; Group Activities</li>
                         </ul>
-                    </div>
+                    </article>
 
-                    <!-- English -->
-                    <div class="card">
+                    <article class="card tilt" data-tilt data-tilt-max="8" data-tilt-glare data-tilt-scale="1.01" data-cursor="View">
+                        <div class="card__shine" aria-hidden="true"></div>
+                        <div class="card__corner" aria-hidden="true"></div>
                         <div class="card-icon"><i class="fas fa-book-open"></i></div>
                         <h3>ENGLISH</h3>
                         <p>The English section highlights my language skills through essays, creative writing, and presentations, improving my vocabulary and confidence.</p>
                         <h4>Included Work:</h4>
                         <ul>
-                            <li>Creative Writing & Essays</li>
+                            <li>Creative Writing &amp; Essays</li>
                             <li>Poems</li>
                             <li>Grammar Projects</li>
                             <li>Presentations</li>
                             <li>Reading Activities</li>
                         </ul>
-                    </div>
+                    </article>
                 </div>
             </div>
         </section>
 
-        <!-- Achievements Section -->
-        <section id="achievements" class="section reveal">
+        <!-- =====================================================
+             Achievements
+             ===================================================== -->
+        <section id="achievements" class="section reveal" data-section-accent="forest">
             <div class="container">
-                <h2 class="section-heading">ACHIEVEMENTS</h2>
+                <h2 class="section-heading" data-reveal-heading>ACHIEVEMENTS</h2>
                 <p class="section-subheading">Certificates • Awards • Competitions • Recognitions</p>
                 <p class="description-text">Participating in various competitions and activities has helped me improve my confidence, analytical thinking, discipline, and problem-solving abilities.</p>
-                
+
                 <div class="achievements-grid">
-                    <!-- Achievement Card 1 -->
-                    <div class="achievement-card">
+                    <article class="achievement-card tilt" data-tilt data-tilt-max="6" data-tilt-scale="1.02" data-zoomable data-cursor="View">
                         <div class="certificate-image">
                             <img src="images/WhatsApp Image 2026-05-30 at 11s.37.45.jpeg" alt="NSO Certificate 2022" loading="lazy" decoding="async">
                         </div>
@@ -161,10 +347,9 @@
                             <h4>National Science Olympiad (NSO)</h4>
                             <p>Participated in 2022</p>
                         </div>
-                    </div>
+                    </article>
 
-                    <!-- Achievement Card 2 -->
-                    <div class="achievement-card">
+                    <article class="achievement-card tilt" data-tilt data-tilt-max="6" data-tilt-scale="1.02" data-zoomable data-cursor="View">
                         <div class="certificate-image">
                             <img src="images/WhatsApp Image 2026-05-30 at 11.37s.44.jpeg" alt="NSO School Rank 1" loading="lazy" decoding="async">
                         </div>
@@ -172,10 +357,9 @@
                             <h4>National Science Olympiad (NSO)</h4>
                             <p>School Rank 1 in 2024</p>
                         </div>
-                    </div>
+                    </article>
 
-                    <!-- Achievement Card 3 -->
-                    <div class="achievement-card">
+                    <article class="achievement-card tilt" data-tilt data-tilt-max="6" data-tilt-scale="1.02" data-zoomable data-cursor="View">
                         <div class="certificate-image">
                             <img src="images/WhatsApp Image 2026-0s5-30 at 11.37.44.jpeg" alt="Science Quiz Award" class="cert-fix" loading="lazy" decoding="async">
                         </div>
@@ -183,10 +367,9 @@
                             <h4>Interschool Science Quiz</h4>
                             <p>Won 2nd Prize</p>
                         </div>
-                    </div>
+                    </article>
 
-                    <!-- Achievement Card 4 -->
-                    <div class="achievement-card">
+                    <article class="achievement-card tilt" data-tilt data-tilt-max="6" data-tilt-scale="1.02" data-zoomable data-cursor="View">
                         <div class="certificate-image">
                             <img src="images/WhatsApp Image 2026-05-30 at 11.37.44.jpeg" alt="Sanskriti Gyan 3rd Prize" loading="lazy" decoding="async">
                         </div>
@@ -194,10 +377,9 @@
                             <h4>Sanskriti Gyan Pariksha</h4>
                             <p>Won 3rd Prize</p>
                         </div>
-                    </div>
+                    </article>
 
-                    <!-- Achievement Card 5 -->
-                    <div class="achievement-card">
+                    <article class="achievement-card tilt" data-tilt data-tilt-max="6" data-tilt-scale="1.02" data-zoomable data-cursor="View">
                         <div class="certificate-image">
                             <img src="images/WhatsApp Imasge 2026-05-30 at 11.37.45.jpeg" alt="Sanskriti Gyan 1st Prize" loading="lazy" decoding="async">
                         </div>
@@ -205,10 +387,9 @@
                             <h4>Sanskriti Gyan Pariksha</h4>
                             <p>Won 1st Prize</p>
                         </div>
-                    </div>
+                    </article>
 
-                    <!-- Achievement Card 6 -->
-                    <div class="achievement-card">
+                    <article class="achievement-card tilt" data-tilt data-tilt-max="6" data-tilt-scale="1.02" data-zoomable data-cursor="View">
                         <div class="certificate-image">
                             <img src="images/WhatsApp Image 2026-05-30 at 11.37.46.jpegs.jpeg" alt="Sanskriti Gyan 2nd Prize" loading="lazy" decoding="async">
                         </div>
@@ -216,30 +397,34 @@
                             <h4>Sanskriti Gyan Pariksha</h4>
                             <p>Won 2nd Prize</p>
                         </div>
-                    </div>
+                    </article>
                 </div>
             </div>
         </section>
 
-        <!-- Co-Curricular Section -->
-        <section id="co-curricular" class="section reveal bg-soft">
+        <!-- =====================================================
+             Co-Curricular
+             ===================================================== -->
+        <section id="co-curricular" class="section reveal bg-soft" data-section-accent="cosmic">
             <div class="container">
-                <h2 class="section-heading">CO-CURRICULAR ACTIVITIES</h2>
+                <h2 class="section-heading" data-reveal-heading>CO-CURRICULAR ACTIVITIES</h2>
                 <p class="section-subheading">Participation and Learning Beyond Academics</p>
-                <div class="content-box">
+                <div class="content-box reveal">
                     <p>Co-curricular activities help students develop confidence, creativity, teamwork, and communication skills. I was a member of the School Cyber Club in Class VIII, where I explored technology-related activities and improved my digital awareness and problem-solving skills.</p>
                     <p>I also participated in school assembly presentations during Classes VI and VII. These activities helped me improve my public speaking skills, confidence, and stage presence. Through these experiences, I learned discipline, coordination, and the value of participating actively in school activities.</p>
                 </div>
             </div>
         </section>
 
-        <!-- Reflection Section -->
-        <section id="reflection" class="section reveal">
+        <!-- =====================================================
+             Reflection
+             ===================================================== -->
+        <section id="reflection" class="section reveal" data-section-accent="aurora">
             <div class="container">
-                <h2 class="section-heading">REFLECTION PAGE</h2>
-                <p class="section-subheading">Strengths, Areas of Improvement & Future Aspirations</p>
+                <h2 class="section-heading" data-reveal-heading>REFLECTION PAGE</h2>
+                <p class="section-subheading">Strengths, Areas of Improvement &amp; Future Aspirations</p>
                 <div class="reflection-content">
-                    <div class="reflection-card">
+                    <div class="reflection-card reveal">
                         <p>This academic year has been a year of learning, growth, and self-improvement for me. I developed a deeper interest in subjects like Physics and Mathematics, especially in understanding higher-level concepts and logical problem-solving. Exploring new ideas and learning beyond the classroom helped me improve my analytical thinking and curiosity towards knowledge.</p>
                         <p>One of my strengths is my dedication towards studies and my ability to think logically while solving problems. I enjoy understanding concepts in depth rather than only memorizing them. I also try to stay disciplined and focused on my academic goals.</p>
                         <p>At the same time, I understand that there are areas where I can improve. I would like to become better at working in teams and participating more actively in group activities. I believe improving my communication and teamwork skills will help me grow as a student and as a person.</p>
@@ -249,17 +434,30 @@
             </div>
         </section>
 
-        <!-- Memories Section -->
-        <section id="memories" class="section reveal bg-soft">
+        <!-- =====================================================
+             Memories
+             ===================================================== -->
+        <section id="memories" class="section reveal bg-soft" data-section-accent="sunset">
             <div class="container">
-                <h2 class="section-heading">SCHOOL MEMORIES</h2>
-                <div class="memories-grid">
-                    <div class="memory-card">
-                        <img src="images/memory_gps.png" alt="Gayatri Public School Memory" loading="lazy" decoding="async">
+                <h2 class="section-heading" data-reveal-heading>SCHOOL MEMORIES</h2>
+                <div class="memories-carousel" id="memoriesCarousel">
+                    <button class="memories-nav memories-nav--prev" type="button" aria-label="Previous memory" data-memories-prev>
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <div class="memories-track" data-memories-track>
+                        <figure class="memory-card">
+                            <img src="images/memory_gps.png" alt="Gayatri Public School Memory" loading="lazy" decoding="async">
+                            <figcaption>Gayatri Public School</figcaption>
+                        </figure>
+                        <figure class="memory-card">
+                            <img src="images/memory_sachdeva.png" alt="Sachdeva Millennium Memory" loading="lazy" decoding="async">
+                            <figcaption>Sachdeva Millennium</figcaption>
+                        </figure>
                     </div>
-                    <div class="memory-card">
-                        <img src="images/memory_sachdeva.png" alt="Sachdeva Millennium Memory" loading="lazy" decoding="async">
-                    </div>
+                    <button class="memories-nav memories-nav--next" type="button" aria-label="Next memory" data-memories-next>
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                    <div class="memories-dots" data-memories-dots aria-hidden="true"></div>
                 </div>
             </div>
         </section>
@@ -267,24 +465,120 @@
 
     <footer class="footer">
         <div class="container">
+            <p class="footer__big">DARSHIL&nbsp;SINGH</p>
             <p>&copy; 2026 Darshil Singh. All Rights Reserved.</p>
             <p>Designed for Excellence</p>
         </div>
     </footer>
 
+    <!-- =====================================================
+         Lightbox
+         ===================================================== -->
     <div class="lightbox" id="lightbox" aria-hidden="true">
         <div class="lightbox__backdrop" data-lightbox-close></div>
         <div class="lightbox__dialog" role="dialog" aria-modal="true" aria-label="Certificate preview">
             <button class="lightbox__close" type="button" data-lightbox-close aria-label="Close preview">
                 <i class="fa-solid fa-xmark"></i>
             </button>
-            <img class="lightbox__image" alt="">
-            <p class="lightbox__caption"></p>
+            <button class="lightbox__nav lightbox__nav--prev" type="button" data-lightbox-prev aria-label="Previous image">
+                <i class="fas fa-chevron-left"></i>
+            </button>
+            <button class="lightbox__nav lightbox__nav--next" type="button" data-lightbox-next aria-label="Next image">
+                <i class="fas fa-chevron-right"></i>
+            </button>
+            <div class="lightbox__stage">
+                <img class="lightbox__image" alt="">
+            </div>
+            <div class="lightbox__meta">
+                <p class="lightbox__caption"></p>
+                <p class="lightbox__counter"></p>
+            </div>
         </div>
     </div>
 
+    <!-- =====================================================
+         Toast Notifications
+         ===================================================== -->
+    <div class="toast-host" id="toastHost" aria-live="polite" aria-atomic="true"></div>
+
+    <!-- =====================================================
+         Keyboard Shortcuts Panel
+         ===================================================== -->
+    <div class="shortcuts" id="shortcuts" aria-hidden="true">
+        <div class="shortcuts__backdrop" data-shortcuts-close></div>
+        <div class="shortcuts__panel" role="dialog" aria-modal="true" aria-label="Keyboard shortcuts">
+            <div class="shortcuts__head">
+                <h3><i class="fas fa-keyboard"></i> Keyboard Shortcuts</h3>
+                <button class="shortcuts__close" type="button" data-shortcuts-close aria-label="Close shortcuts">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <ul class="shortcuts__list">
+                <li><kbd>T</kbd><span>Cycle theme</span></li>
+                <li><kbd>S</kbd><span>Toggle sound</span></li>
+                <li><kbd>D</kbd><span>Download CV</span></li>
+                <li><kbd>C</kbd><span>Open contact</span></li>
+                <li><kbd>H</kbd><span>Back to top</span></li>
+                <li><kbd>G</kbd><span>Toggle section mini-nav</span></li>
+                <li><kbd>?</kbd><span>Show / hide this panel</span></li>
+                <li><kbd>Esc</kbd><span>Close any open panel</span></li>
+            </ul>
+            <p class="shortcuts__hint">Tap the <kbd>?</kbd> key on a keyboard, or the keyboard icon in the dock.</p>
+        </div>
+    </div>
+
+    <!-- =====================================================
+         Contact Modal
+         ===================================================== -->
+    <div class="contact-modal" id="contactModal" aria-hidden="true">
+        <div class="contact-modal__backdrop" data-contact-close></div>
+        <div class="contact-modal__panel" role="dialog" aria-modal="true" aria-label="Contact Darshil">
+            <button class="contact-modal__close" type="button" data-contact-close aria-label="Close contact">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <div class="contact-modal__head">
+                <span class="contact-modal__icon"><i class="fas fa-hand-sparkles"></i></span>
+                <h3>Let's Connect</h3>
+                <p>Reach out for academics, projects, or just to say hi.</p>
+            </div>
+            <div class="contact-modal__grid">
+                <a class="contact-card magnetic" href="mailto:darshilsingh37@gmail.com?subject=Hello%20Darshil" data-cursor="Email">
+                    <span class="contact-card__icon"><i class="fas fa-envelope"></i></span>
+                    <span class="contact-card__label">Email</span>
+                    <span class="contact-card__value">darshilsingh37@gmail.com</span>
+                </a>
+                <a class="contact-card magnetic" href="https://github.com/darshilsingh37-commits" target="_blank" rel="noopener" data-cursor="GitHub">
+                    <span class="contact-card__icon"><i class="fab fa-github"></i></span>
+                    <span class="contact-card__label">GitHub</span>
+                    <span class="contact-card__value">@darshilsingh37-commits</span>
+                </a>
+                <a class="contact-card magnetic" href="https://wa.me/?text=Hi%20Darshil" target="_blank" rel="noopener" data-cursor="WhatsApp">
+                    <span class="contact-card__icon"><i class="fab fa-whatsapp"></i></span>
+                    <span class="contact-card__label">WhatsApp</span>
+                    <span class="contact-card__value">Send a message</span>
+                </a>
+                <button class="contact-card magnetic" id="copyUrlBtn" type="button" data-cursor="Copy">
+                    <span class="contact-card__icon"><i class="fas fa-link"></i></span>
+                    <span class="contact-card__label">Share Portfolio</span>
+                    <span class="contact-card__value">Copy page URL</span>
+                </button>
+            </div>
+            <p class="contact-modal__foot">
+                <i class="fas fa-lock"></i> Your details stay between us. No trackers, no spam.
+            </p>
+        </div>
+    </div>
+
+    <!-- =====================================================
+         Keyboard Shortcuts Hint Bubble
+         ===================================================== -->
+    <button class="kbd-hint" id="kbdHint" type="button" aria-label="Show keyboard shortcuts" data-cursor="Shortcuts">
+        <i class="fas fa-keyboard"></i>
+    </button>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
     <script src="script.js"></script>
 </body>
 </html>
