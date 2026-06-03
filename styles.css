@@ -451,7 +451,7 @@ body::before {
     height: 100%; width: 0%;
     background: linear-gradient(90deg, var(--accent), var(--accent-2));
     box-shadow: 0 0 18px rgba(110, 231, 255, 0.32);
-    transition: width var(--dur-fast) linear;
+    will-change: width;
 }
 .nav-container {
     display: flex; justify-content: space-between; align-items: center;
@@ -644,7 +644,7 @@ body::before {
     left: 0; right: 0; bottom: 0;
     height: 0%;
     background: linear-gradient(180deg, var(--accent), var(--accent-2));
-    transition: height var(--dur-fast) linear;
+    will-change: height;
 }
 
 /* =========================================================
@@ -1497,6 +1497,29 @@ body.party-mode .section-heading {
     .dock__btn { width: 40px; height: 40px; }
     .dock__tip { display: none; }
     .cert-preview { display: none !important; }
+
+    /* =========================================================
+       Mobile performance optimizations
+       (visual look preserved; heavy paint/composite costs removed)
+       ========================================================= */
+    .bg-video video { display: none; }
+    .floater { display: none; }
+    body::before { display: none; }
+    .hero__grid { display: none; }
+    .navbar { backdrop-filter: none; -webkit-backdrop-filter: none; background: rgba(8, 15, 31, 0.88); }
+    .dock { backdrop-filter: none; -webkit-backdrop-filter: none; background: rgba(8, 15, 31, 0.88); }
+    .kbd-hint { backdrop-filter: none; -webkit-backdrop-filter: none; background: rgba(8, 15, 31, 0.88); }
+    .bg-soft { backdrop-filter: none; -webkit-backdrop-filter: none; }
+    .toast { backdrop-filter: none; -webkit-backdrop-filter: none; }
+    .memories-nav { backdrop-filter: none; -webkit-backdrop-filter: none; background: rgba(8, 15, 31, 0.85); }
+    .drawer__backdrop,
+    .lightbox__backdrop,
+    .shortcuts__backdrop,
+    .contact-modal__backdrop { backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
+    .card, .achievement-card { transform-style: flat; will-change: auto; }
+    .hero-quote { animation: none; }
+    .preloader__char { animation: none; }
+    .card__shine { display: none; }
 }
 
 @media (max-width: 480px) {

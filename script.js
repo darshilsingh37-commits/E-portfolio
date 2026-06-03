@@ -14,9 +14,8 @@
      • Lightbox with prev/next, zoom + pan, swipe
      • Certificate hover preview (desktop)
      • Hero title scramble on hover
-     • GSAP scroll reveals with character animations
-     • Scroll milestone confetti (25/50/75/100%)
-     • 4 color themes (Aurora, Sunset, Forest, Cosmic)
+      • GSAP scroll reveals with character animations
+      • 4 color themes (Aurora, Sunset, Forest, Cosmic)
      • Optional Web Audio sound effects
      • Touch vibration on tap (mobile)
      • Konami code easter egg
@@ -132,6 +131,26 @@
         };
         if (document.readyState === 'complete') setTimeout(finish, 500);
         else window.addEventListener('load', () => setTimeout(finish, 500));
+    };
+
+    /* -------------------------
+       Background video control
+       Pauses on touch devices to save battery / avoid decode cost.
+       Pauses when the tab is hidden.
+       ------------------------- */
+    const initBgVideo = () => {
+        const v = document.querySelector('.bg-video video');
+        if (!v) return;
+        if (isTouch) {
+            v.pause();
+            v.removeAttribute('autoplay');
+            v.preload = 'none';
+        }
+        const onVis = () => {
+            if (document.hidden) { v.pause(); return; }
+            if (!isTouch) v.play().catch(() => {});
+        };
+        document.addEventListener('visibilitychange', onVis);
     };
 
     /* -------------------------
@@ -514,51 +533,34 @@
     const initNav = () => {
         const navbar = $('#navbar');
         const progressBar = $('.scroll-progress__bar');
+        const sectionFill = $('#sectionProgressFill');
         let raf = 0;
-        const milestones = { 25: false, 50: false, 75: false, 100: false };
+        let maxScroll = 1;
+
+        const measure = () => {
+            maxScroll = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
+        };
+
+        const update = () => {
+            const y = window.scrollY;
+            if (navbar) navbar.classList.toggle('is-scrolled', y > 40);
+            const p = clamp((y / maxScroll) * 100, 0, 100);
+            if (progressBar) progressBar.style.width = `${p}%`;
+            if (sectionFill) sectionFill.style.height = `${p}%`;
+            raf = 0;
+        };
+
         const onScroll = () => {
             if (raf) return;
-            raf = requestAnimationFrame(() => {
-                const y = window.scrollY;
-                if (navbar) navbar.classList.toggle('is-scrolled', y > 40);
-                if (progressBar) {
-                    const max = document.documentElement.scrollHeight - window.innerHeight;
-                    const p = max > 0 ? (y / max) * 100 : 0;
-                    progressBar.style.width = `${clamp(p, 0, 100)}%`;
-                    // Milestones
-                    [25, 50, 75, 100].forEach((m) => {
-                        if (!milestones[m] && p >= m) {
-                            milestones[m] = true;
-                            fireMilestone(m);
-                        }
-                    });
-                }
-                // Section progress fill
-                const fill = $('#sectionProgressFill');
-                if (fill) {
-                    const max = document.documentElement.scrollHeight - window.innerHeight;
-                    const p = max > 0 ? (y / max) * 100 : 0;
-                    fill.style.height = `${clamp(p, 0, 100)}%`;
-                }
-                raf = 0;
-            });
+            raf = requestAnimationFrame(update);
         };
-        const fireMilestone = (m) => {
-            Sound.success();
-            if (typeof window.confetti === 'function') {
-                const colors = ['#6ee7ff', '#a78bfa', '#22c55e', '#f472b6', '#facc15'];
-                window.confetti({
-                    particleCount: 80,
-                    spread: 70,
-                    startVelocity: 35,
-                    origin: { y: 0.7 },
-                    colors
-                });
-            }
-            showToast(`${m}% scrolled — keep going!`, 'chart-line');
-        };
-        onScroll();
+
+        const onResize = () => { measure(); onScroll(); };
+
+        measure();
+        update();
         window.addEventListener('scroll', onScroll, { passive: true });
+        window.addEventListener('resize', onResize, { passive: true });
     };
 
     /* -------------------------
@@ -1717,6 +1719,7 @@
        ------------------------- */
     onReady(() => {
         initPreloader();
+        initBgVideo();
         initTheme();
         initTextSplit();
         initClock();
