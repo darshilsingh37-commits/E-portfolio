@@ -60,10 +60,16 @@
          Background Video + Particle Canvas
          ===================================================== -->
     <div class="bg-video" aria-hidden="true">
-        <video autoplay muted loop playsinline preload="metadata">
+        <video id="bgVideo" autoplay muted loop playsinline preload="metadata" disablepictureinpicture disableRemotePlayback>
             <source src="assets/bg-video.mp4" type="video/mp4">
         </video>
         <div class="bg-overlay"></div>
+        <button class="bg-video__tap" id="bgVideoTap" type="button" aria-label="Play background video" data-cursor="Play">
+            <span class="bg-video__tap-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="22" height="22"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>
+            </span>
+            <span class="bg-video__tap-text">Play background</span>
+        </button>
     </div>
 
     <canvas id="particles" class="particles" aria-hidden="true"></canvas>
@@ -155,6 +161,10 @@
             <i class="fas fa-volume-xmark"></i>
             <span class="dock__tip">Sound</span>
         </button>
+        <button class="dock__btn magnetic" id="cursorStyleBtn" type="button" aria-label="Change cursor style" data-cursor="Cursor" aria-haspopup="dialog" aria-expanded="false">
+            <i class="fas fa-arrow-pointer"></i>
+            <span class="dock__tip">Cursor</span>
+        </button>
         <button class="dock__btn magnetic" id="cvBtn" type="button" aria-label="Download CV" data-cursor="Download CV">
             <i class="fas fa-file-arrow-down"></i>
             <span class="dock__tip">Download CV</span>
@@ -163,6 +173,71 @@
             <i class="fas fa-arrow-up"></i>
             <span class="dock__tip">Top</span>
         </button>
+    </div>
+
+    <!-- =====================================================
+         Cursor Style Picker (PC only, hidden on touch)
+         ===================================================== -->
+    <div class="cursor-picker" id="cursorPicker" role="dialog" aria-modal="false" aria-label="Choose cursor style" hidden>
+        <div class="cursor-picker__backdrop" data-cursor-picker-close></div>
+        <div class="cursor-picker__panel" role="document">
+            <header class="cursor-picker__header">
+                <h3 class="cursor-picker__title">Cursor Style</h3>
+                <button class="cursor-picker__close magnetic" type="button" data-cursor-picker-close aria-label="Close" data-cursor="Close">
+                    <i class="fas fa-xmark"></i>
+                </button>
+            </header>
+            <p class="cursor-picker__hint">Pick a style. Each has its own animation &amp; element interactions.</p>
+            <div class="cursor-picker__grid" id="cursorPickerGrid">
+                <button class="cursor-style" type="button" data-style="classic" data-cursor="Classic">
+                    <span class="cursor-style__preview cursor-style__preview--classic" aria-hidden="true">
+                        <span class="cursor-style__ring"></span>
+                        <span class="cursor-style__dot"></span>
+                    </span>
+                    <span class="cursor-style__name">Classic</span>
+                    <span class="cursor-style__desc">Smooth &amp; elegant</span>
+                </button>
+                <button class="cursor-style" type="button" data-style="glitch" data-cursor="Glitch">
+                    <span class="cursor-style__preview cursor-style__preview--glitch" aria-hidden="true">
+                        <span class="cursor-style__glitch-a"></span>
+                        <span class="cursor-style__glitch-b"></span>
+                        <span class="cursor-style__glitch-c"></span>
+                    </span>
+                    <span class="cursor-style__name">Glitch</span>
+                    <span class="cursor-style__desc">RGB split &amp; shake</span>
+                </button>
+                <button class="cursor-style" type="button" data-style="aurora" data-cursor="Aurora">
+                    <span class="cursor-style__preview cursor-style__preview--aurora" aria-hidden="true">
+                        <span class="cursor-style__aurora-blob"></span>
+                    </span>
+                    <span class="cursor-style__name">Aurora</span>
+                    <span class="cursor-style__desc">Flowing gradient</span>
+                </button>
+                <button class="cursor-style" type="button" data-style="neon" data-cursor="Neon">
+                    <span class="cursor-style__preview cursor-style__preview--neon" aria-hidden="true">
+                        <span class="cursor-style__neon-glow"></span>
+                        <span class="cursor-style__neon-ring"></span>
+                        <span class="cursor-style__neon-dot"></span>
+                    </span>
+                    <span class="cursor-style__name">Neon</span>
+                    <span class="cursor-style__desc">Electric pulse</span>
+                </button>
+                <button class="cursor-style" type="button" data-style="minimal" data-cursor="Minimal">
+                    <span class="cursor-style__preview cursor-style__preview--minimal" aria-hidden="true">
+                        <span class="cursor-style__minimal-dot"></span>
+                    </span>
+                    <span class="cursor-style__name">Minimal</span>
+                    <span class="cursor-style__desc">Crisp &amp; tiny</span>
+                </button>
+                <button class="cursor-style" type="button" data-style="liquid" data-cursor="Liquid">
+                    <span class="cursor-style__preview cursor-style__preview--liquid" aria-hidden="true">
+                        <span class="cursor-style__liquid-blob"></span>
+                    </span>
+                    <span class="cursor-style__name">Liquid</span>
+                    <span class="cursor-style__desc">Morphing blob</span>
+                </button>
+            </div>
+        </div>
     </div>
 
     <!-- =====================================================
@@ -477,13 +552,13 @@
     <div class="lightbox" id="lightbox" aria-hidden="true">
         <div class="lightbox__backdrop" data-lightbox-close></div>
         <div class="lightbox__dialog" role="dialog" aria-modal="true" aria-label="Certificate preview">
-            <button class="lightbox__close" type="button" data-lightbox-close aria-label="Close preview">
+            <button class="lightbox__close" type="button" data-lightbox-close aria-label="Close preview" data-cursor="Close">
                 <i class="fa-solid fa-xmark"></i>
             </button>
-            <button class="lightbox__nav lightbox__nav--prev" type="button" data-lightbox-prev aria-label="Previous image">
+            <button class="lightbox__nav lightbox__nav--prev" type="button" data-lightbox-prev aria-label="Previous image" data-cursor="Prev">
                 <i class="fas fa-chevron-left"></i>
             </button>
-            <button class="lightbox__nav lightbox__nav--next" type="button" data-lightbox-next aria-label="Next image">
+            <button class="lightbox__nav lightbox__nav--next" type="button" data-lightbox-next aria-label="Next image" data-cursor="Next">
                 <i class="fas fa-chevron-right"></i>
             </button>
             <div class="lightbox__stage">

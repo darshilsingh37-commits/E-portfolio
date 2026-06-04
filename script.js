@@ -135,22 +135,125 @@
 
     /* -------------------------
        Background video control
-       Pauses on touch devices to save battery / avoid decode cost.
-       Pauses when the tab is hidden.
+       - Works on phone (iOS Safari, Android Chrome, WeChat)
+       - Tries autoplay, falls back to a tap-to-play overlay
+       - Pauses when the tab is hidden, resumes when visible
+       - Honors data-saver + prefers-reduced-motion
        ------------------------- */
     const initBgVideo = () => {
-        const v = document.querySelector('.bg-video video');
-        if (!v) return;
-        if (isTouch) {
+        const wrap = document.querySelector('.bg-video');
+        const v = document.getElementById('bgVideo') || document.querySelector('.bg-video video');
+        const tap = document.getElementById('bgVideoTap');
+        if (!v || !wrap) return;
+
+        // iOS / iPadOS detection (still useful for tweaks)
+        const isIOS = /iP(hone|ad|od)/.test(navigator.platform) ||
+            (navigator.userAgent.includes('Mac') && 'ontouchend' in document);
+        const isAndroid = /Android/i.test(navigator.userAgent);
+
+        // Respect data-saver and reduced-motion — keep the static overlay + poster look
+        const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+        const saveData = !!(conn && conn.saveData);
+        const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+        if (reducedMotion || saveData) {
             v.pause();
             v.removeAttribute('autoplay');
             v.preload = 'none';
+            return;
         }
+
+        // iOS / WeChat friendly attributes
+        v.muted = true;
+        v.setAttribute('muted', '');
+        v.setAttribute('playsinline', '');
+        v.setAttribute('webkit-playsinline', 'true');
+        v.setAttribute('x5-video-player-type', 'h5');
+        v.setAttribute('x5-video-orientation', 'portrait');
+        v.setAttribute('disablepictureinpicture', '');
+        v.setAttribute('disableremoteplayback', '');
+        v.playsInline = true;
+        v.loop = true;
+
+        // Set the source via JS for reliability on some mobile browsers
+        try {
+            if (!v.currentSrc && !v.src) {
+                const source = v.querySelector('source');
+                if (source && source.src) {
+                    const url = source.getAttribute('src');
+                    v.src = url;
+                }
+            }
+        } catch (_) { /* ignore */ }
+
+        const showTap = () => {
+            wrap.classList.add('is-paused');
+            if (tap) tap.style.display = '';
+        };
+        const hideTap = () => {
+            wrap.classList.remove('is-paused');
+        };
+
+        const tryPlay = () => {
+            const p = v.play();
+            if (p && typeof p.then === 'function') {
+                p.then(() => { hideTap(); })
+                 .catch(() => { showTap(); });
+            } else {
+                hideTap();
+            }
+        };
+
+        // Initial autoplay attempt (works on Android / desktop; iOS often needs a gesture)
+        tryPlay();
+
+        // If metadata fails to load on mobile, surface the tap-to-play fallback
+        v.addEventListener('error', showTap, { once: true });
+        v.addEventListener('stalled', showTap, { once: true });
+
+        // On the very first user gesture, retry play. This satisfies iOS Safari.
+        const onFirstGesture = () => {
+            tryPlay();
+            ['pointerdown', 'touchstart', 'click', 'keydown', 'scroll'].forEach((ev) =>
+                document.removeEventListener(ev, onFirstGesture, { capture: true })
+            );
+        };
+        ['pointerdown', 'touchstart', 'click', 'keydown', 'scroll'].forEach((ev) =>
+            document.addEventListener(ev, onFirstGesture, { capture: true, once: false, passive: true })
+        );
+
+        // Tap-to-play button explicitly tries to start the video
+        if (tap) {
+            tap.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                v.muted = true;          // must be muted for mobile autoplay
+                v.currentTime = 0;
+                const p = v.play();
+                if (p && typeof p.then === 'function') {
+                    p.then(hideTap).catch(() => { /* still blocked, keep the tap button */ });
+                } else {
+                    hideTap();
+                }
+            });
+        }
+
+        // Pause when tab hidden; resume when visible
         const onVis = () => {
             if (document.hidden) { v.pause(); return; }
-            if (!isTouch) v.play().catch(() => {});
+            tryPlay();
         };
         document.addEventListener('visibilitychange', onVis);
+
+        // iOS sometimes pauses inline video when the app backgrounds — re-sync on focus
+        window.addEventListener('pageshow', () => { tryPlay(); });
+        window.addEventListener('focus', () => { tryPlay(); });
+
+        // Stop decoding on slow connections / low battery
+        const pauseIfHidden = () => { if (document.hidden) v.pause(); };
+        document.addEventListener('visibilitychange', pauseIfHidden);
+        v.addEventListener('pause', () => { if (!document.hidden) showTap(); });
+        v.addEventListener('playing', () => { hideTap(); });
     };
 
     /* -------------------------
@@ -180,6 +283,15 @@
 
     /* -------------------------
        Custom Cursor + Trail
+       40+ variant states: hover, view, drag, text, label, down,
+       link, play, grab, crosshair, loading, resize-h, resize-v,
+       disabled, arrow-left, arrow-right, eye, heart, plus, brush,
+       zoom, pen, camera, send, save, share, music, book, mail, code,
+       bulb, target, star, lock, search, square, diamond, blob, arrow,
+       color tints, animations: bounce, shake, blink, wiggle,
+       spin-slow, beat, tilt
+       Plus: magnetic-snap, click-burst, scroll-velocity, section
+       theming, 3D tilt on cards.
        ------------------------- */
     const initCursor = () => {
         if (isTouch || !isFinePointer || prefersReducedMotion) return;
@@ -192,7 +304,33 @@
 
         document.body.classList.add('has-cursor');
 
-        const TRAIL_N = 12;
+        // Visual helper for magnetic elements (a dashed ring that follows)
+        const magnetRing = document.createElement('div');
+        magnetRing.className = 'cursor-magnet-ring';
+        document.body.appendChild(magnetRing);
+
+        // Container for click-burst particles (uses the existing ripple-layer visually)
+        const burstLayer = document.createElement('div');
+        burstLayer.className = 'cursor-burst-layer';
+        burstLayer.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:9000;overflow:hidden;';
+        document.body.appendChild(burstLayer);
+
+        const ALL_STATES = [
+            'is-hover','is-view','is-drag','is-text','is-label','is-down',
+            'is-link','is-play','is-grab','is-crosshair','is-loading',
+            'is-resize-h','is-resize-v','is-disabled','is-arrow-left','is-arrow-right',
+            'is-eye','is-heart','is-plus','is-brush','is-zoom',
+            'is-pulse','is-magnet','is-magnetic-snap','is-tilt',
+            'is-pen','is-camera','is-send','is-save','is-share','is-music',
+            'is-book','is-mail','is-code','is-bulb','is-target','is-star',
+            'is-lock','is-search','is-square','is-diamond','is-blob','is-arrow',
+            'is-tint-pink','is-tint-green','is-tint-orange','is-tint-purple',
+            'is-tint-rose','is-tint-amber',
+            'is-bounce','is-shake','is-blink','is-wiggle','is-spin-slow','is-beat',
+            'is-section','is-fast','is-slow'
+        ];
+
+        const TRAIL_N = 14;
         const trailDots = [];
         for (let i = 0; i < TRAIL_N; i++) {
             const d = document.createElement('span');
@@ -203,16 +341,351 @@
 
         const mouse = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
         const pos = { x: mouse.x, y: mouse.y };
+        const targetPos = { x: mouse.x, y: mouse.y };
         let active = false;
+        let lastMoveAt = performance.now();
+        let lastX = mouse.x, lastY = mouse.y;
+        let velocity = 0;
 
+        const setState = (cls) => {
+            cursor.classList.remove(...ALL_STATES);
+            if (cls) cursor.classList.add(...cls.split(/\s+/).filter(Boolean));
+        };
+        const addState = (cls) => { if (cls) cursor.classList.add(...cls.split(/\s+/).filter(Boolean)); };
+        const removeState = (cls) => { if (cls) cursor.classList.remove(...cls.split(/\s+/).filter(Boolean)); };
+
+        // Map a data-cursor value to one or more state classes
+        const mapCursorLabel = (val) => {
+            if (!val) return null;
+            const v = String(val).trim().toLowerCase();
+            if (!v) return null;
+            const direct = {
+                'play':'is-play','pause':'is-play',
+                'link':'is-link','open':'is-link',
+                'drag':'is-grab','grab':'is-grab',
+                'crosshair':'is-crosshair','aim':'is-crosshair',
+                'loading':'is-loading','wait':'is-loading','busy':'is-loading',
+                'resize h':'is-resize-h','resize-h':'is-resize-h','ew':'is-resize-h',
+                'resize v':'is-resize-v','resize-v':'is-resize-v','ns':'is-resize-v',
+                'disabled':'is-disabled','no':'is-disabled','not-allowed':'is-disabled',
+                'prev':'is-arrow-left','previous':'is-arrow-left','left':'is-arrow-left',
+                'next':'is-arrow-right','right':'is-arrow-right',
+                'view':'is-zoom','zoom':'is-zoom','eye':'is-eye',
+                'heart':'is-heart','favorite':'is-heart','fav':'is-heart',
+                'plus':'is-plus','add':'is-plus','create':'is-plus',
+                'brush':'is-brush','paint':'is-brush',
+                'pen':'is-pen','write':'is-pen','edit':'is-pen',
+                'camera':'is-camera','photo':'is-camera','image':'is-camera',
+                'send':'is-send','plane':'is-send','paper-plane':'is-send',
+                'save':'is-save','download':'is-save','disk':'is-save',
+                'share':'is-share','forward':'is-share',
+                'music':'is-music','note':'is-music','song':'is-music',
+                'book':'is-book','read':'is-book',
+                'mail':'is-mail','email':'is-mail','envelope':'is-mail','message':'is-mail',
+                'code':'is-code','brackets':'is-code','dev':'is-code',
+                'bulb':'is-bulb','idea':'is-bulb','light':'is-bulb',
+                'target':'is-target','reticle':'is-target',
+                'star':'is-star','rating':'is-star',
+                'lock':'is-lock','secure':'is-lock','private':'is-lock',
+                'search':'is-search','find':'is-search','magnify':'is-search',
+                'square':'is-square','box':'is-square',
+                'diamond':'is-diamond','gem':'is-diamond',
+                'blob':'is-blob','organic':'is-blob',
+                'pointer':'is-arrow','cursor':'is-arrow',
+                'bounce':'is-bounce',
+                'shake':'is-shake',
+                'blink':'is-blink',
+                'wiggle':'is-wiggle',
+                'spin':'is-spin-slow',
+                'beat':'is-beat','pulse-beat':'is-beat',
+                'pink':'is-tint-pink',
+                'green':'is-tint-green',
+                'orange':'is-tint-orange',
+                'purple':'is-tint-purple',
+                'rose':'is-tint-rose','red':'is-tint-rose',
+                'amber':'is-tint-amber','yellow':'is-tint-amber',
+                'magnet':'is-magnetic-snap','snap':'is-magnetic-snap'
+            };
+            if (direct[v]) return direct[v];
+            // Default: fall back to label + hover
+            return 'is-label is-hover';
+        };
+
+        // Click-burst: emit 8 particles from the click point
+        // Click-burst: emit particles from the click point.
+        // N = number of particles, spread = max distance (px).
+        const emitBurst = (x, y, N = 8, spread = 60) => {
+            for (let i = 0; i < N; i++) {
+                const angle = (i / N) * Math.PI * 2;
+                const dist = spread * (0.5 + Math.random() * 0.5);
+                const size = 4 + Math.random() * 5;
+                const p = document.createElement('span');
+                p.className = 'click-burst';
+                p.style.left = x + 'px';
+                p.style.top = y + 'px';
+                p.style.width = size + 'px';
+                p.style.height = size + 'px';
+                p.style.setProperty('--bx', `${Math.cos(angle) * dist}px`);
+                p.style.setProperty('--by', `${Math.sin(angle) * dist}px`);
+                p.style.setProperty('--bs', `${0.2 + Math.random() * 0.4}`);
+                const useAlt = i % 2 === 0;
+                p.style.background = useAlt ? 'var(--accent-2)' : 'var(--accent)';
+                burstLayer.appendChild(p);
+                setTimeout(() => p.remove(), 750);
+            }
+        };
+
+        // Find nearest .magnetic element to the cursor
+        const findNearestMagnetic = (mx, my) => {
+            const els = document.querySelectorAll('.magnetic, [data-magnetic]');
+            let best = null, bestD = Infinity;
+            els.forEach((el) => {
+                const r = el.getBoundingClientRect();
+                if (r.width === 0 || r.height === 0) return;
+                const cx = r.left + r.width / 2;
+                const cy = r.top + r.height / 2;
+                const d = Math.hypot(mx - cx, my - cy);
+                if (d < bestD) { bestD = d; best = { el, r, cx, cy, d }; }
+            });
+            return best;
+        };
+
+        // 3D Tilt on .tilt-3d elements while cursor moves over them
+        const applyTilt = (mx, my) => {
+            const els = document.querySelectorAll('.tilt-3d:hover');
+            els.forEach((el) => {
+                const r = el.getBoundingClientRect();
+                const px = (mx - r.left) / r.width;
+                const py = (my - r.top) / r.height;
+                const tx = (px - 0.5) * 10;   // -5deg .. +5deg
+                const ty = (py - 0.5) * -10;
+                el.style.setProperty('--tx', `${tx}deg`);
+                el.style.setProperty('--ty', `${ty}deg`);
+                el.style.transform = `perspective(900px) rotateX(${ty}deg) rotateY(${tx}deg) translateY(-2px)`;
+            });
+        };
+        const resetTilt = (e) => {
+            const el = e.currentTarget;
+            el.style.transform = '';
+            el.style.removeProperty('--tx');
+            el.style.removeProperty('--ty');
+        };
+        document.querySelectorAll('.tilt-3d').forEach((el) => {
+            el.addEventListener('mouseleave', resetTilt);
+        });
+
+        // Section theming — observe which <section id> is in view
+        const sections = document.querySelectorAll('section[id], .section[id]');
+        if ('IntersectionObserver' in window && sections.length) {
+            const io = new IntersectionObserver((entries) => {
+                entries.forEach((entry) => {
+                    if (entry.isIntersecting) {
+                        const ctx = entry.target.getAttribute('data-ctx') || entry.target.id;
+                        if (ctx) document.body.setAttribute('data-ctx', ctx);
+                    }
+                });
+            }, { rootMargin: '-45% 0px -45% 0px', threshold: 0 });
+            sections.forEach((s) => io.observe(s));
+        }
+
+        // Scroll-velocity: scale the cursor inversely with scroll speed
+        let lastScrollY = window.scrollY, scrollVel = 0;
+        const onScroll = () => {
+            const y = window.scrollY;
+            scrollVel = Math.abs(y - lastScrollY);
+            lastScrollY = y;
+            if (scrollVel > 8)      addState('is-fast');
+            else if (scrollVel < 1) addState('is-slow');
+            else { removeState('is-fast'); removeState('is-slow'); }
+        };
+        window.addEventListener('scroll', onScroll, { passive: true });
+        // Auto-clear the velocity state when scroll settles
+        setInterval(() => { scrollVel *= 0.6; if (scrollVel < 1) removeState('is-fast'); }, 120);
+
+        const onMove = (e) => {
+            const dx = e.clientX - lastX, dy = e.clientY - lastY;
+            lastX = e.clientX; lastY = e.clientY;
+            velocity = Math.hypot(dx, dy);
+            lastMoveAt = performance.now();
+
+            // Magnetic snap: if close to a .magnetic element, gently pull the target position
+            // toward its center. The visual cursor still follows the lerp; the target pulls in.
+            const near = findNearestMagnetic(e.clientX, e.clientY);
+            if (near && near.d < 90) {
+                addState('is-magnetic-snap');
+                const strength = 1 - (near.d / 90);     // 0..1
+                targetPos.x = e.clientX + (near.cx - e.clientX) * 0.18 * strength;
+                targetPos.y = e.clientY + (near.cy - e.clientY) * 0.18 * strength;
+
+                // Show the dashed magnet ring around the magnetic element
+                const r = near.r;
+                magnetRing.style.left = (r.left + r.width / 2) + 'px';
+                magnetRing.style.top = (r.top + r.height / 2) + 'px';
+                magnetRing.style.width = Math.max(r.width, r.height) + 'px';
+                magnetRing.style.height = Math.max(r.width, r.height) + 'px';
+                magnetRing.classList.add('is-active');
+
+                // Drive the magnetic element's offset too (subtle pull)
+                near.el.style.transform = `translate(${(near.cx - e.clientX) * -0.06}px, ${(near.cy - e.clientY) * -0.06}px)`;
+            } else {
+                removeState('is-magnetic-snap');
+                magnetRing.classList.remove('is-active');
+                targetPos.x = e.clientX;
+                targetPos.y = e.clientY;
+            }
+
+            mouse.x = e.clientX;
+            mouse.y = e.clientY;
+
+            // Tilt: tilt any hovered .tilt-3d card
+            applyTilt(e.clientX, e.clientY);
+
+            // Set rotation of the ring based on movement direction (visual flair)
+            if (ring) {
+                const tilt = Math.max(-25, Math.min(25, dx * 4));
+                ring.style.setProperty('--cx-tilt', `${tilt}deg`);
+            }
+
+            // Hero glow tracking (existing)
+            const glow = $('#heroGlow');
+            if (glow) {
+                const r = glow.getBoundingClientRect();
+                const gx = ((e.clientX - r.left) / r.width) * 100;
+                const gy = ((e.clientY - r.top) / r.height) * 100;
+                glow.style.setProperty('--gx', `${gx}%`);
+                glow.style.setProperty('--gy', `${gy}%`);
+            }
+        };
+
+        const onEnter = (e) => {
+            const t = e.target;
+            if (!(t instanceof Element)) return;
+
+            // data-cursor="..." with optional data-cursor-color / data-cursor-anim
+            const labelEl = t.closest('[data-cursor]');
+            if (labelEl) {
+                const val = labelEl.getAttribute('data-cursor') || '';
+                const state = mapCursorLabel(val);
+                if (state && state.includes('is-label')) {
+                    setState('is-label is-hover');
+                } else if (state) {
+                    setState(state);
+                } else {
+                    setState('is-label is-hover');
+                }
+                if (label) label.textContent = val;
+            } else {
+                // Detect the element class
+                const hoverable = t.closest('a, button, [role="button"], .magnetic, .tilt, .btn, summary, label');
+                const viewable = t.closest('[data-zoomable], img.cert-fix, .certificate-image');
+                const text = t.closest('p, h1, h2, h3, h4, h5, h6, li, blockquote, .nav-link, .card-title');
+                const draggable = t.closest('[draggable="true"], .draggable, .carousel');
+                const resizeH = t.closest('[data-cursor-resize="h"], .resizable-x, .splitter-h');
+                const resizeV = t.closest('[data-cursor-resize="v"], .resizable-y, .splitter-v');
+                const formField = t.closest('input, textarea, select, [contenteditable="true"]');
+                const isDisabled = t.closest('[disabled], [aria-disabled="true"], .is-disabled');
+                const isLoading = t.closest('[data-loading="true"], .is-loading, [aria-busy="true"]');
+                const tiltEl = t.closest('.tilt-3d');
+
+                if (isLoading)        setState('is-loading');
+                else if (isDisabled && !hoverable) setState('is-disabled');
+                else if (resizeH)     setState('is-resize-h');
+                else if (resizeV)     setState('is-resize-v');
+                else if (draggable)   setState('is-grab');
+                else if (viewable)    setState('is-zoom');
+                else if (formField)   setState('is-text');
+                else if (text && !hoverable) setState('is-text');
+                else if (tiltEl)      setState('is-tilt');
+                else if (hoverable) {
+                    const isPrimary = hoverable.classList.contains('btn--primary') ||
+                                      hoverable.classList.contains('dock__btn');
+                    const style = (document.body.dataset.cursorStyle || 'classic').toLowerCase();
+
+                    // Per-style interaction on hover
+                    let extras = '';
+                    if (style === 'glitch') extras = 'is-shake';
+                    else if (style === 'aurora') extras = 'is-bounce';
+                    else if (style === 'neon') extras = 'is-pulse';
+                    else if (style === 'minimal') extras = '';
+                    else if (style === 'liquid') extras = 'is-bounce';
+                    else extras = ''; // classic
+
+                    setState(`is-hover ${extras}`.trim());
+                    if (Math.random() < 0.1) Sound.hover();
+                } else {
+                    setState(null);
+                }
+            }
+
+            // Apply data-cursor-color (e.g. "pink", "green", ...) and data-cursor-anim
+            const hint = t.closest('[data-cursor-color], [data-cursor-anim]');
+            if (hint) {
+                const color = hint.getAttribute('data-cursor-color');
+                if (color) {
+                    const cls = mapCursorLabel(color);
+                    if (cls) addState(cls);
+                }
+                const anim = hint.getAttribute('data-cursor-anim');
+                if (anim) {
+                    const cls = mapCursorLabel(anim);
+                    if (cls) addState(cls);
+                }
+            }
+        };
+
+        const onLeave = (e) => {
+            const t = e.target;
+            if (!(t instanceof Element)) return;
+            // Reset magnetic-element offset if we were hovering a magnetic
+            const mag = t.closest('.magnetic, [data-magnetic]');
+            if (mag) mag.style.transform = '';
+        };
+
+        const onDown = (e) => {
+            const cls = (cursor.className.match(/is-[a-z-]+/g) || []).filter((c) => c !== 'is-down');
+            cursor.className = `cursor ${cls.join(' ')} is-down`;
+            // Per-style click effects + emit click-burst (skip with shift)
+            if (!e.shiftKey) {
+                const style = (document.body.dataset.cursorStyle || 'classic').toLowerCase();
+                // Neon gets a bigger burst; Liquid gets a wider spread; Glitch gets more particles
+                if (style === 'neon') emitBurst(e.clientX, e.clientY, 14, 90);
+                else if (style === 'liquid') emitBurst(e.clientX, e.clientY, 12, 80);
+                else if (style === 'glitch') emitBurst(e.clientX, e.clientY, 16, 70);
+                else if (style === 'aurora') emitBurst(e.clientX, e.clientY, 10, 100);
+                else if (style === 'minimal') { /* minimal has no burst — keep clean */ }
+                else emitBurst(e.clientX, e.clientY, 8, 60);
+            }
+        };
+        const onUp = () => {
+            const cls = (cursor.className.match(/is-[a-z-]+/g) || []).filter((c) => c !== 'is-down');
+            cursor.className = `cursor ${cls.join(' ')}`;
+        };
+
+        // Arrow keys + nav buttons trigger left/right cursor
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft')  { setState('is-arrow-left'); }
+            else if (e.key === 'ArrowRight') { setState('is-arrow-right'); }
+        });
+        window.addEventListener('keyup', () => {
+            // Don't clear the section state — that comes from onEnter
+            removeState('is-arrow-left'); removeState('is-arrow-right');
+        });
+
+        // Render loop: lerp the cursor toward `pos`, with magnetic pull
         const render = () => {
             if (!active) return;
-            pos.x = lerp(pos.x, mouse.x, 0.22);
-            pos.y = lerp(pos.y, mouse.y, 0.22);
+            // Pos chases target (mouse + magnetic pull)
+            pos.x = lerp(pos.x, targetPos.x, 0.22);
+            pos.y = lerp(pos.y, targetPos.y, 0.22);
             if (dot) dot.style.transform = `translate(${pos.x}px, ${pos.y}px) translate(-50%, -50%)`;
-            if (ring) ring.style.transform = `translate(${pos.x}px, ${pos.y}px) translate(-50%, -50%)`;
+            if (ring) {
+                // Preserve tilt rotation for .is-tilt states
+                const tiltVal = (cursor.classList.contains('is-tilt') || cursor.classList.contains('is-tilt-down'))
+                    ? ` rotate(var(--cx-tilt, 0deg))` : '';
+                ring.style.transform = `translate(${pos.x}px, ${pos.y}px) translate(-50%, -50%)${tiltVal}`;
+            }
 
-            // trail
+            // Trail (color matches current trail base = --accent)
             let prevX = pos.x, prevY = pos.y;
             for (let i = 0; i < trailDots.length; i++) {
                 const t = trailDots[i];
@@ -229,60 +702,13 @@
             requestAnimationFrame(render);
         };
 
-        const setState = (cls) => {
-            cursor.classList.remove('is-hover', 'is-view', 'is-drag', 'is-text', 'is-label', 'is-down');
-            if (cls) cursor.classList.add(cls);
-        };
-
-        const onMove = (e) => {
-            mouse.x = e.clientX;
-            mouse.y = e.clientY;
-            const glow = $('#heroGlow');
-            if (glow) {
-                const r = glow.getBoundingClientRect();
-                const gx = ((e.clientX - r.left) / r.width) * 100;
-                const gy = ((e.clientY - r.top) / r.height) * 100;
-                glow.style.setProperty('--gx', `${gx}%`);
-                glow.style.setProperty('--gy', `${gy}%`);
-            }
-        };
-
-        const onEnter = (e) => {
-            const t = e.target;
-            if (!(t instanceof Element)) return;
-            const hoverable = t.closest('a, button, [role="button"], .magnetic, .tilt, .btn');
-            const viewable = t.closest('[data-zoomable], img.cert-fix, .certificate-image');
-            const text = t.closest('p, h1, h2, h3, h4, h5, h6, li, blockquote');
-            const labelEl = t.closest('[data-cursor]');
-            if (labelEl) {
-                setState('is-label is-hover');
-                if (label) label.textContent = labelEl.getAttribute('data-cursor') || '';
-            } else if (viewable) {
-                setState('is-view');
-            } else if (text && !hoverable) {
-                setState('is-text');
-            } else if (hoverable) {
-                setState('is-hover');
-                if (Math.random() < 0.1) Sound.hover();
-            } else {
-                setState(null);
-            }
-        };
-        const onDown = () => {
-            const cls = (cursor.className.match(/is-[a-z-]+/g) || []).filter((c) => c !== 'is-down');
-            cursor.className = `cursor ${cls.join(' ')} is-down`;
-        };
-        const onUp = () => {
-            const cls = (cursor.className.match(/is-[a-z-]+/g) || []).filter((c) => c !== 'is-down');
-            cursor.className = `cursor ${cls.join(' ')}`;
-        };
-
         window.addEventListener('mousemove', onMove, { passive: true });
         window.addEventListener('mouseover', onEnter, { passive: true });
+        window.addEventListener('mouseout', onLeave, { passive: true });
         window.addEventListener('mousedown', onDown);
         window.addEventListener('mouseup', onUp);
-        document.addEventListener('mouseleave', () => { cursor.style.opacity = '0'; trail.style.opacity = '0'; });
-        document.addEventListener('mouseenter', () => { cursor.style.opacity = '1'; trail.style.opacity = '1'; });
+        document.addEventListener('mouseleave', () => { cursor.style.opacity = '0'; trail.style.opacity = '0'; magnetRing.style.opacity = '0'; });
+        document.addEventListener('mouseenter', () => { cursor.style.opacity = '1'; trail.style.opacity = '1'; magnetRing.style.opacity = '1'; });
 
         active = true;
         render();
@@ -1715,6 +2141,93 @@
     };
 
     /* -------------------------
+       Cursor Style Picker (PC only)
+       Lets the user switch between 6 cursor styles.
+       Persists choice in localStorage and applies it to
+       body[data-cursor-style] which all the CSS variants key off of.
+       Hidden on touch via CSS; also guarded in JS.
+       ------------------------- */
+    const CURSOR_STYLES = ['classic', 'glitch', 'aurora', 'neon', 'minimal', 'liquid'];
+    const CURSOR_STYLE_LABELS = {
+        classic: 'Classic',
+        glitch:  'Glitch',
+        aurora:  'Aurora',
+        neon:    'Neon',
+        minimal: 'Minimal',
+        liquid:  'Liquid'
+    };
+    const CURSOR_STYLE_KEY = 'pf-cursor-style';
+
+    const initCursorPicker = () => {
+        // PC-only: bail on touch / coarse pointer
+        if (isTouch || !isFinePointer) return;
+
+        const btn = $('#cursorStyleBtn');
+        const picker = $('#cursorPicker');
+        const grid = $('#cursorPickerGrid');
+        if (!btn || !picker || !grid) return;
+
+        // Apply stored style (or default to classic)
+        const stored = (() => {
+            try { return localStorage.getItem(CURSOR_STYLE_KEY) || 'classic'; }
+            catch (_) { return 'classic'; }
+        })();
+        const applyStyle = (style) => {
+            if (!CURSOR_STYLES.includes(style)) style = 'classic';
+            document.body.dataset.cursorStyle = style;
+            try { localStorage.setItem(CURSOR_STYLE_KEY, style); } catch (_) { /* ignore */ }
+            // Mark active button
+            grid.querySelectorAll('.cursor-style').forEach((b) => {
+                b.classList.toggle('is-active', b.dataset.style === style);
+                b.setAttribute('aria-pressed', b.dataset.style === style ? 'true' : 'false');
+            });
+            // Show a tiny confirmation toast
+            if (typeof showToast === 'function') {
+                showToast(`Cursor: ${CURSOR_STYLE_LABELS[style] || style}`, 'arrow-pointer');
+            }
+        };
+        applyStyle(stored);
+
+        const open = () => {
+            picker.hidden = false;
+            requestAnimationFrame(() => picker.classList.add('is-open'));
+            btn.setAttribute('aria-expanded', 'true');
+            document.body.style.overflow = 'hidden';
+        };
+        const close = () => {
+            picker.classList.remove('is-open');
+            setTimeout(() => { picker.hidden = true; }, 350);
+            btn.setAttribute('aria-expanded', 'false');
+            document.body.style.overflow = '';
+        };
+
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (picker.hidden) open(); else close();
+        });
+        picker.addEventListener('click', (e) => {
+            if (e.target.closest('[data-cursor-picker-close]')) close();
+        });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && !picker.hidden) close();
+        });
+
+        // Wire each style option
+        grid.querySelectorAll('.cursor-style').forEach((b) => {
+            b.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const style = b.dataset.style;
+                applyStyle(style);
+                // Tiny visual feedback
+                Sound.click && Sound.click();
+                setTimeout(close, 220);
+            });
+        });
+    };
+
+    /* -------------------------
        Init
        ------------------------- */
     onReady(() => {
@@ -1737,6 +2250,7 @@
         initCertPreview();
         initTitleScramble();
         initCursor();
+        initCursorPicker();
         initParticles();
         initTilt();
         initMagnetic();
