@@ -1011,53 +1011,33 @@ body::before {
   transform: scale(0); animation: rippleWave 0.6s var(--ease) forwards; pointer-events: none;
 }
 
-/* ---------- Mobile-Only Dynamic Tilting Animations ---------- */
+/* ---------- Mobile-Only Animations (lightweight — no continuous 3D tilts) ---------- */
 @media (max-width: 900px) {
-  /* Enhanced floating for mobile */
-  .hero__orb--1 { animation: float-y-big 4s ease-in-out infinite; }
-  .hero__orb--2 { animation: float-y-big 5s ease-in-out infinite -1.5s; }
-  .hero__orb--3 { animation: float-y-big 6s ease-in-out infinite -3s; }
-  /* Faster decorative floats */
-  .decor--dna, .decor--atom, .decor--lightbulb, .decor--globe, .decor--hourglass {
-    animation: float-y-soft 3s ease-in-out infinite;
-  }
-  .decor--atom { animation: float-y-soft 4s ease-in-out infinite, spin-slow 18s linear infinite; }
-  /* More pronounced background shapes */
-  .bg-shapes__o { animation-duration: 8s !important; }
-  .bg-shapes__s { animation-duration: 12s !important; }
-  /* Hero title 4D mobile tilt baseline */
-  .hero__title { animation: heroFloatMobile 4s ease-in-out infinite; }
-  @keyframes heroFloatMobile {
-    0%, 100% { transform: perspective(800px) rotateX(0) rotateY(0) translateZ(0); }
-    50% { transform: perspective(800px) rotateX(-2deg) rotateY(2deg) translateZ(0); }
-  }
-  /* Section heading gentle tilt on mobile */
-  .section__title { animation: titleFloatMobile 5s ease-in-out infinite; }
-  @keyframes titleFloatMobile {
-    0%, 100% { transform: perspective(800px) rotateY(0) translateZ(0); }
-    50% { transform: perspective(800px) rotateY(-2deg) translateZ(0); }
-  }
-  /* Cards get auto-float */
-  .cert:nth-child(odd), .memory:nth-child(odd) { animation: cardFloatMobile 5s ease-in-out infinite; }
-  .cert:nth-child(even), .memory:nth-child(even) { animation: cardFloatMobile 5s ease-in-out infinite -2.5s; }
-  @keyframes cardFloatMobile {
-    0%, 100% { transform: perspective(800px) translateY(0) rotateX(0); }
-    50% { transform: perspective(800px) translateY(-4px) rotateX(1deg); }
-  }
-  /* Subtle background drift for video veil */
-  .bg-video__veil { animation: veilDrift 8s ease-in-out infinite; }
+  /* Subtle background video veil drift (single composited background-position anim) */
+  .bg-video__veil { animation: veilDrift 10s ease-in-out infinite; }
   @keyframes veilDrift {
     0%, 100% { background-position: 0% 0%, 0% 0%, 0% 0%; }
-    50% { background-position: 5% 10%, -5% -10%, 0% 0%; }
+    50% { background-position: 4% 8%, -4% -8%, 0% 0%; }
   }
-  /* Form field 3D on focus - more pronounced */
-  .field:focus-within { transform: perspective(600px) rotateX(2deg) scale(1.02); }
-  /* Contact icons pulse on mobile */
-  .contact__ico { animation: iconPulseMobile 3s ease-in-out infinite; }
+  /* Decorative floats kept (already cheap) but slowed down a touch */
+  .decor--dna, .decor--atom, .decor--lightbulb, .decor--globe, .decor--hourglass {
+    animation-duration: 7s !important;
+  }
+  /* Form field gentle lift on focus (no rotateX — just a soft lift) */
+  .field:focus-within { transform: translateZ(0) scale(1.01); }
+  /* Contact icon soft pulse */
+  .contact__ico { animation: iconPulseMobile 3.5s ease-in-out infinite; }
   @keyframes iconPulseMobile {
     0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.05) rotate(5deg); }
+    50% { transform: scale(1.04) rotate(3deg); }
   }
+  /* Disable expensive per-card auto-floats on mobile (preserved on desktop via :hover) */
+  .cert:nth-child(odd), .memory:nth-child(odd),
+  .cert:nth-child(even), .memory:nth-child(even) { animation: none !important; }
+  /* Drop the heroFloatMobile / titleFloatMobile perpetual 3D loops (cause of mobile lag) */
+  .hero__title, .section__title { animation: none !important; }
+  /* Drop CTA pulse on mobile (box-shadow animation is paint-expensive) */
+  .btn--primary::before { animation: none !important; }
 }
 
 /* ---------- Reflection Section (visual cards + hourglass) ---------- */
@@ -1303,4 +1283,46 @@ body::before {
   .reveal, .reveal-up, .reveal-left, .reveal-right, .reveal-scale, .reveal-rotate { opacity: 1 !important; transform: none !important; }
   .stagger > * { opacity: 1 !important; transform: none !important; }
   .txt-reveal > span { transform: none !important; }
+}
+
+/* ---------- Mobile Performance Hardening ----------
+   Goal: keep every entrance reveal + scroll-tied transform (3D tilt on sections,
+   hero scroll rotation, parallax, reveal-on-scroll). Drop only the perpetual
+   background layers and idle 3D composite layers that are GPU-expensive on phones. */
+@media (max-width: 900px) {
+  /* Remove 300ms tap delay + stop accidental pinch-zoom on form fields */
+  html, body { touch-action: manipulation; }
+  body { -webkit-tap-highlight-color: transparent; }
+
+  /* Defense-in-depth: hide the heavy background layers even if some HTML slipped through */
+  .bg-orbs, .bg-grid, .bg-dots, .bg-shapes, .bg-beam, .bg-light { display: none !important; }
+
+  /* Nav glassmorphism: cheaper blur radius on mobile (still glassy, way less GPU) */
+  .nav { backdrop-filter: blur(10px) saturate(140%); -webkit-backdrop-filter: blur(10px) saturate(140%); }
+  .nav.is-scrolled { background: color-mix(in oklab, var(--bg) 96%, transparent); }
+  .toast { backdrop-filter: none; -webkit-backdrop-filter: none; }
+
+  /* Keep the background video, but drop the saturate (filter cost) and reduce blur */
+  .bg-video { filter: blur(1px); }
+
+  /* Drop the SVG-noise paper grain blend on small screens (mix-blend-mode is paint-heavy) */
+  body::before { opacity: 0.18; mix-blend-mode: normal; }
+
+  /* Free GPU memory: stop forcing will-change / preserve-3d on idle elements.
+     JS still adds them on real interaction if needed. */
+  [data-tilt], .subject, .cert, .memory, .contact__card, .field,
+  .hero__title, .section__title, .nav__links a, .iconbtn, .cta-mini,
+  .cert__img, .memory__img, .parallax-slow, .parallax-med, .parallax-fast, .parallax-rev {
+    will-change: auto;
+    transform-style: flat;
+  }
+
+  /* Off-screen sections: skip painting entirely (massive paint-cost win for long pages).
+     The IntersectionObserver-driven reveal animations still run because they fire on
+     enter-viewport, which is when content-visibility switches to "visible" anyway. */
+  .section { content-visibility: auto; contain-intrinsic-size: 1px 700px; }
+
+  /* Hover-driven backdrop blur on cards is unnecessary on touch (no sustained hover);
+     also avoid paint spikes on tap that briefly triggers :hover. */
+  .cert:hover, .subject:hover, .memory:hover, .contact__card:hover { backdrop-filter: none; -webkit-backdrop-filter: none; }
 }

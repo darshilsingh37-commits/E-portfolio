@@ -3,6 +3,12 @@
    3D/4D/5D Animations + Easter Eggs
    ========================================= */
 
+// ---------- Device capability (declare EARLY so heavy systems can gate) ----------
+const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const lowCores = (navigator.hardwareConcurrency || 4) < 4;
+const isLowPower = isTouch || lowCores || reduceMotion;
+
 // ---------- Preloader (handled by inline CSS animation; JS only as backup) ----------
 const preloader = document.getElementById('preloader');
 const preloaderSkip = document.getElementById('preloaderSkip');
@@ -115,8 +121,9 @@ document.addEventListener('mouseout', () => cursor && cursor.classList.remove('i
 // 4D BACKGROUND LAYERS (alive, multi-layer)
 // =========================================
 
-// Layer 1: Animated background orbs (large blurred circles)
+// Layer 1: Animated background orbs (large blurred circles) — DESKTOP ONLY
 const initBgOrbs = () => {
+  if (isLowPower) return; // skip on touch / low-power / reduced-motion
   if (document.getElementById('bgOrbs')) return;
   const wrap = document.createElement('div');
   wrap.id = 'bgOrbs';
@@ -130,8 +137,9 @@ const initBgOrbs = () => {
 };
 initBgOrbs();
 
-// Layer 1b: Perspective grid
+// Layer 1b: Perspective grid — DESKTOP ONLY
 const initBgGrid = () => {
+  if (isLowPower) return;
   if (document.getElementById('bgGrid')) return;
   const wrap = document.createElement('div');
   wrap.id = 'bgGrid';
@@ -143,8 +151,9 @@ const initBgGrid = () => {
 };
 initBgGrid();
 
-// Layer 1c: Dot matrix overlay
+// Layer 1c: Dot matrix overlay — DESKTOP ONLY
 const initBgDots = () => {
+  if (isLowPower) return;
   if (document.getElementById('bgDots')) return;
   const wrap = document.createElement('div');
   wrap.id = 'bgDots';
@@ -153,8 +162,9 @@ const initBgDots = () => {
 };
 initBgDots();
 
-// Layer 1d: Floating geometric shapes
+// Layer 1d: Floating geometric shapes — DESKTOP ONLY (mobile uses reduced set via CSS)
 const initBgShapes = () => {
+  if (isLowPower) return;
   if (document.getElementById('bgShapes')) return;
   const wrap = document.createElement('div');
   wrap.id = 'bgShapes';
@@ -168,8 +178,9 @@ const initBgShapes = () => {
 };
 initBgShapes();
 
-// Layer 1e: Vertical light beam
+// Layer 1e: Vertical light beam — DESKTOP ONLY
 const initBgBeam = () => {
+  if (isLowPower) return;
   if (document.getElementById('bgBeam')) return;
   const b = document.createElement('div');
   b.id = 'bgBeam';
@@ -178,8 +189,9 @@ const initBgBeam = () => {
 };
 initBgBeam();
 
-// Layer 1f: Mouse-following light spot
+// Layer 1f: Mouse-following light spot — DESKTOP ONLY (touch has no mouse)
 const initBgLight = () => {
+  if (isLowPower) return;
   if (document.getElementById('bgLight')) return;
   const l = document.createElement('div');
   l.id = 'bgLight';
@@ -199,8 +211,9 @@ const initBgLight = () => {
 };
 initBgLight();
 
-// Layer 2: Three.js particle field
+// Layer 2: Three.js particle field — DESKTOP ONLY (skip on touch)
 const initBg3D = () => {
+  if (isTouch) return; // heavy on mobile GPUs
   if (!window.THREE) return;
   const THREE = window.THREE;
 
@@ -460,50 +473,10 @@ if (videoBtn) videoBtn.addEventListener('click', () => {
 });
 
 // =========================================
-// MOBILE DYNAMIC TILT (scroll-velocity-based)
+// MOBILE DYNAMIC TILT — DISABLED for perf (was a per-rAF loop on every touch device)
 // =========================================
-if (isTouch) {
-  let lastScrollY = 0, lastScrollTime = Date.now();
-  let scrollVelocity = 0; // signed velocity
-  let smoothedVelocity = 0;
-
-  window.addEventListener('scroll', () => {
-    const now = Date.now();
-    const dt = Math.max(now - lastScrollTime, 1);
-    const dy = window.scrollY - lastScrollY;
-    scrollVelocity = dy / dt; // px/ms
-    lastScrollY = window.scrollY;
-    lastScrollTime = now;
-  }, { passive: true });
-
-  // Apply scroll-velocity tilt on mobile only
-  const applyScrollTilt = () => {
-    smoothedVelocity += (scrollVelocity - smoothedVelocity) * 0.1;
-    scrollVelocity *= 0.92; // decay
-
-    // Tilt decorations based on scroll velocity
-    const tiltAmt = Math.max(-1, Math.min(1, smoothedVelocity * 4));
-    document.querySelectorAll('.decor--dna, .decor--atom, .decor--lightbulb, .decor--globe, .decor--hourglass, .hero__chair').forEach(el => {
-      el.style.transform = `rotate(${tiltAmt * 8}deg) translateY(${scrollY * -0.15}px)`;
-    });
-
-    // Background shapes rotate faster
-    document.querySelectorAll('.bg-shapes__s').forEach((s, i) => {
-      const extra = (i + 1) * 2;
-      s.style.transform = `rotate(${tiltAmt * extra}deg)`;
-    });
-
-    // Hero title skews slightly with scroll velocity
-    if (heroTitle && Math.abs(tiltAmt) > 0.05) {
-      const cur = heroTitle.style.transform || '';
-      heroTitle.dataset.velocityTilt = ` skewX(${tiltAmt * 3}deg)`;
-    }
-
-    requestAnimationFrame(applyScrollTilt);
-  };
-  applyScrollTilt();
-}
-const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+// Note: rAF-based scroll-velocity tilt removed on touch devices. Touch tilt on
+// [data-tilt] cards is kept (single touchmove → single rAF, no per-frame loop).
 if (isTouch) {
   document.querySelectorAll('[data-tilt]').forEach(el => {
     let raf = null, startX = 0, startY = 0, active = false;
@@ -530,11 +503,12 @@ if (isTouch) {
 }
 
 // =========================================
-// GYROSCOPE 3D TILT (mobile premium feature)
+// GYROSCOPE 3D TILT (mobile premium feature) — gated to non-low-power
 // =========================================
 let gyroEnabled = false;
 const initGyro = () => {
   if (!isTouch) return;
+  if (lowCores || reduceMotion) return; // skip on low-power devices
   if (typeof DeviceOrientationEvent === 'undefined') return;
   if (typeof DeviceOrientationEvent.requestPermission === 'function') {
     // iOS 13+ — request permission on first user interaction
@@ -558,21 +532,16 @@ const initGyro = () => {
 };
 const attachGyro = () => {
   let baseBeta = null, baseGamma = null;
+  let lastApply = 0;
   window.addEventListener('deviceorientation', (e) => {
     if (e.beta === null || e.gamma === null) return;
     if (baseBeta === null) { baseBeta = e.beta; baseGamma = e.gamma; return; }
+    const now = performance.now();
+    if (now - lastApply < 80) return; // throttle to ~12 fps, smooth enough
+    lastApply = now;
     const beta = (e.beta - baseBeta) * 0.4;  // front-back (-180 to 180)
     const gamma = (e.gamma - baseGamma) * 0.4; // left-right (-90 to 90)
-    // Apply to hero title and decorations
     if (heroTitle) heroTitle.style.transform = `perspective(1000px) rotateX(${beta * 0.3}deg) rotateY(${gamma * 0.3}deg) translateZ(0)`;
-    // Apply to background shapes
-    document.querySelectorAll('.bg-shapes__s').forEach((s, i) => {
-      const offset = (i + 1) * 0.3;
-      s.style.transform = `translate(${gamma * offset}px, ${beta * offset}px) rotate(${gamma * 0.5}deg)`;
-    });
-    // Apply to dots
-    const dots = document.getElementById('bgDots');
-    if (dots) dots.style.transform = `translate(${gamma * 0.5}px, ${beta * 0.5}px)`;
   });
 };
 initGyro();
@@ -666,12 +635,6 @@ if (isTouch) {
 }
 
 // =========================================
-// PERFORMANCE: reduce particles + orbs on low-power
-// =========================================
-const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-const isLowPower = isTouch || navigator.hardwareConcurrency < 4 || reduceMotion;
-
-// =========================================
 // FOOTER BRAND 3D tilt
 // =========================================
 const footerBrand = document.querySelector('.footer__brand');
@@ -755,7 +718,7 @@ document.querySelectorAll('.cert, .memory, .contact__card').forEach(el => {
 });
 
 // =========================================
-// SECTION SCROLL TILT (4D perspective)
+// SECTION SCROLL TILT (4D perspective) — runs on every device
 // =========================================
 const tiltSections = document.querySelectorAll('[data-tilt-section]');
 const onScrollTilt = () => {
@@ -769,7 +732,7 @@ const onScrollTilt = () => {
 };
 
 // =========================================
-// HERO 3D SCROLL ROTATION
+// HERO 3D SCROLL ROTATION — runs on every device
 // =========================================
 const heroTitle = document.querySelector('.hero__title');
 const heroEyebrow = document.querySelector('.hero__eyebrow');
