@@ -477,7 +477,7 @@ function initThreeParticles() {
     
     const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 3500);
     camera.position.z = 100;
-    camera.position.y = 160; // Starts high up in the sky looking down
+    camera.position.y = 8; // Slightly elevated eye-level
 
     const renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: !isMobile });
     renderer.setSize(window.innerWidth, window.innerHeight);
@@ -498,231 +498,111 @@ function initThreeParticles() {
         return new THREE.CanvasTexture(canvasTexture);
     }
 
-    // Winding path center function (creates a dynamic corridor with straight lines and curves)
+    // Winding path center function
     function getPathX(z) {
-        const t = Math.max(0, Math.min(1, (100 - z) / 3200));
-        if (t < 0.20) {
-            return Math.sin(z * 0.0008) * 35;
-        } else if (t < 0.38) {
-            const p = (t - 0.20) / 0.18;
-            const startX = Math.sin((100 - 0.20 * 3200) * 0.0008) * 35;
-            const endX = Math.sin((100 - 0.38 * 3200) * 0.0035) * 36 + Math.cos((100 - 0.38 * 3200) * 0.0010) * 20;
-            return startX + (endX - startX) * p;
-        } else if (t < 0.82) {
-            return Math.sin(z * 0.0035) * 36 + Math.cos(z * 0.0010) * 20;
-        } else {
-            return Math.sin(z * 0.0012) * 55;
-        }
-    }
-
-    // Camera height (Y-axis) profile over the flight
-    function getCameraY(z) {
-        const t = Math.max(0, Math.min(1, (100 - z) / 3200));
-        if (t < 0.20) {
-            const p = t / 0.20;
-            return 160 - p * 15; // 160 -> 145 (starts high in sky)
-        } else if (t < 0.38) {
-            const p = (t - 0.20) / 0.18;
-            const ease = (1 - Math.cos(p * Math.PI)) / 2;
-            return 145 + ease * (10 - 145); // 145 -> 10 (dives into dense forest)
-        } else if (t < 0.48) {
-            const p = (t - 0.38) / 0.10;
-            const ease = (1 - Math.cos(p * Math.PI)) / 2;
-            return 10 + ease * (-22 - 10); // 10 -> -22 (falls close to sea/ground)
-        } else if (t < 0.82) {
-            const p = (t - 0.48) / 0.34;
-            return -22 + Math.sin(p * Math.PI * 4) * 1.5; // skimming water/canyon with bobbing
-        } else if (t < 0.98) {
-            const p = (t - 0.82) / 0.16;
-            const ease = (1 - Math.cos(p * Math.PI)) / 2;
-            return -22 + ease * (125 - (-22)); // -22 -> 125 (climbs back up to clouds)
-        } else {
-            const p = (t - 0.98) / 0.02;
-            return 125 + p * 5; // 125 -> 130
-        }
-    }
-
-    // Procedural branching tree generator (builds realistic trunks, branches, and leaf canopies)
-    function generateTreePoints(treeX, treeZ, pointsPerTree, positionsArray, colorsArray, startIndex) {
-        let index = startIndex;
-        const maxPoints = startIndex + pointsPerTree * 3;
-        
-        // Distribute points: 35% on branches/trunk, 65% on leaves
-        const branchPointsCount = Math.floor(pointsPerTree * 0.35);
-        const leafPointsCount = pointsPerTree - branchPointsCount;
-        
-        let branches = [];
-        let tips = [];
-        
-        // Recursive fractal branching function
-        function buildBranch(startX, startY, startZ, dirX, dirY, dirZ, length, radius, depth) {
-            const endX = startX + dirX * length;
-            const endY = startY + dirY * length;
-            const endZ = startZ + dirZ * length;
-            
-            branches.push({
-                startX, startY, startZ,
-                endX, endY, endZ,
-                radius,
-                depth
-            });
-            
-            if (depth >= 4 || length < 2.5) {
-                tips.push({ x: endX, y: endY, z: endZ });
-                return;
-            }
-            
-            const numSplits = 2 + Math.floor(Math.random() * 2); // 2 or 3 splits
-            for (let i = 0; i < numSplits; i++) {
-                const angleYaw = (Math.random() - 0.5) * 1.3;
-                const anglePitch = 0.35 + Math.random() * 0.65;
-                
-                let dx = dirX + Math.sin(angleYaw) * 0.5;
-                let dy = dirY + anglePitch * 0.5;
-                let dz = dirZ + Math.cos(angleYaw) * 0.5;
-                
-                const len = Math.sqrt(dx*dx + dy*dy + dz*dz);
-                dx /= len;
-                dy /= len;
-                dz /= len;
-                
-                buildBranch(endX, endY, endZ, dx, dy, dz, length * 0.72, radius * 0.65, depth + 1);
-            }
-        }
-        
-        const trunkHeight = 15 + Math.random() * 8;
-        const trunkRadius = 1.3 + Math.random() * 0.5;
-        buildBranch(treeX, -25, treeZ, 0, 1, 0, trunkHeight, trunkRadius, 0);
-        
-        // Write branch/trunk points
-        const pointsPerBranch = Math.floor(branchPointsCount / branches.length);
-        for (const b of branches) {
-            for (let p = 0; p < pointsPerBranch; p++) {
-                if (index >= maxPoints) break;
-                
-                const t = Math.random();
-                const cx = b.startX + (b.endX - b.startX) * t;
-                const cy = b.startY + (b.endY - b.startY) * t;
-                const cz = b.startZ + (b.endZ - b.startZ) * t;
-                
-                const r = Math.random() * b.radius;
-                const angle = Math.random() * Math.PI * 2;
-                const px = cx + Math.cos(angle) * r;
-                const py = cy;
-                const pz = cz + Math.sin(angle) * r;
-                
-                positionsArray[index] = px;
-                positionsArray[index + 1] = py;
-                positionsArray[index + 2] = pz;
-                
-                // Brown colors for wood (darker at base)
-                const factor = 0.6 + (b.depth / 5) * 0.4;
-                colorsArray[index] = (0.28 + Math.random() * 0.08) * factor;     
-                colorsArray[index + 1] = (0.16 + Math.random() * 0.06) * factor; 
-                colorsArray[index + 2] = (0.08 + Math.random() * 0.04) * factor; 
-                index += 3;
-            }
-        }
-        
-        // Write foliage leaf points around tips
-        const pointsPerTip = Math.floor(leafPointsCount / tips.length);
-        for (const tip of tips) {
-            for (let p = 0; p < pointsPerTip; p++) {
-                if (index >= maxPoints) break;
-                
-                const radius = 5.5 + Math.random() * 4.5;
-                const u = Math.random();
-                const v = Math.random();
-                const theta = u * 2.0 * Math.PI;
-                const phi = Math.acos(2.0 * v - 1.0);
-                
-                const px = tip.x + radius * Math.sin(phi) * Math.cos(theta);
-                const py = tip.y + radius * Math.sin(phi) * Math.sin(theta);
-                const pz = tip.z + radius * Math.cos(phi);
-                
-                positionsArray[index] = px;
-                positionsArray[index + 1] = py;
-                positionsArray[index + 2] = pz;
-                
-                // Greens & Gold Highlights
-                const leafType = Math.random();
-                if (leafType < 0.65) {
-                    colorsArray[index] = 0.08 + Math.random() * 0.08;     
-                    colorsArray[index + 1] = 0.44 + Math.random() * 0.16; 
-                    colorsArray[index + 2] = 0.12 + Math.random() * 0.08; 
-                } else if (leafType < 0.88) {
-                    colorsArray[index] = 0.38 + Math.random() * 0.12;     
-                    colorsArray[index + 1] = 0.58 + Math.random() * 0.12; 
-                    colorsArray[index + 2] = 0.08 + Math.random() * 0.06; 
-                } else {
-                    colorsArray[index] = 0.04 + Math.random() * 0.04;     
-                    colorsArray[index + 1] = 0.28 + Math.random() * 0.08; 
-                    colorsArray[index + 2] = 0.06 + Math.random() * 0.04; 
-                }
-                index += 3;
-            }
-        }
-        
-        // Fill remaining tree points with leaf points
-        while (index < maxPoints) {
-            const tip = tips[Math.floor(Math.random() * tips.length)];
-            const radius = 5.0 + Math.random() * 5.0;
-            const u = Math.random();
-            const v = Math.random();
-            const theta = u * 2.0 * Math.PI;
-            const phi = Math.acos(2.0 * v - 1.0);
-            
-            positionsArray[index] = tip.x + radius * Math.sin(phi) * Math.cos(theta);
-            positionsArray[index + 1] = tip.y + radius * Math.sin(phi) * Math.sin(theta);
-            positionsArray[index + 2] = tip.z + radius * Math.cos(phi);
-            
-            colorsArray[index] = 0.08 + Math.random() * 0.08;
-            colorsArray[index + 1] = 0.44 + Math.random() * 0.16;
-            colorsArray[index + 2] = 0.12 + Math.random() * 0.08;
-            index += 3;
-        }
+        return Math.sin(z * 0.0016) * 55; // S-curve path left and right
     }
 
     // Splitting particles:
-    // Forest: 42% (Rich detailed trees)
-    // Sea/Water floor: 22%
-    // Mountains: 18%
-    // Clouds: 13%
+    // Forest: 35%
+    // Sea/Water floor: 25%
+    // Mountains: 20%
+    // Clouds: 15%
     // Stars & Moon: 5%
-    const forestCount = Math.floor(particleCount * 0.42);
-    const seaCount = Math.floor(particleCount * 0.22);
-    const mountainCount = Math.floor(particleCount * 0.18);
-    const cloudCount = Math.floor(particleCount * 0.13);
+    const forestCount = Math.floor(particleCount * 0.35);
+    const seaCount = Math.floor(particleCount * 0.25);
+    const mountainCount = Math.floor(particleCount * 0.20);
+    const cloudCount = Math.floor(particleCount * 0.15);
     const starCount = particleCount - (forestCount + seaCount + mountainCount + cloudCount);
 
-    // 1. Forest Particle Generation (Detailed procedural trees)
+    // 1. Forest Particle Generation (Trees and Canopies)
     const forestGeometry = new THREE.BufferGeometry();
     const forestPositions = new Float32Array(forestCount * 3);
     const forestColors = new Float32Array(forestCount * 3);
 
-    const treeCount = isMobile ? 30 : 65; // High tree count for dense forest corridor
+    const treeCount = isMobile ? 22 : 45; // More trees for a dense forest corridor
     const pointsPerTree = Math.floor(forestCount / treeCount);
     let forestIdx = 0;
 
     for (let t = 0; t < treeCount; t++) {
         // Space trees along the entire path (z from 0 to -3000)
-        const treeZ = -t * (3000 / treeCount) - Math.random() * 20;
+        const treeZ = -t * (3000 / treeCount) - Math.random() * 25;
         const pathX = getPathX(treeZ);
         const isLeft = t % 2 === 0;
-        // Place trees much closer to the path for an immersive corridor fly-through
-        const treeX = pathX + (isLeft ? -15 - Math.random() * 35 : 15 + Math.random() * 35);
+        // Place trees closer to the path for an immersive fly-through
+        const treeX = pathX + (isLeft ? -25 - Math.random() * 30 : 25 + Math.random() * 30);
 
-        // Generate detailed tree (recursive branches + dense tips leaves)
-        generateTreePoints(treeX, treeZ, pointsPerTree, forestPositions, forestColors, forestIdx);
-        forestIdx += pointsPerTree * 3;
+        // Trunk generation
+        const trunkPoints = Math.floor(pointsPerTree * 0.15);
+        for (let p = 0; p < trunkPoints; p++) {
+            const radius = 0.8 + Math.random() * 0.5;
+            const angle = Math.random() * Math.PI * 2;
+            const x = treeX + Math.cos(angle) * radius;
+            const y = Math.random() * 55 - 25; 
+            const z = treeZ + Math.sin(angle) * radius;
+
+            forestPositions[forestIdx] = x;
+            forestPositions[forestIdx + 1] = y;
+            forestPositions[forestIdx + 2] = z;
+
+            // Wood browns
+            forestColors[forestIdx] = 0.32 + Math.random() * 0.12;     
+            forestColors[forestIdx + 1] = 0.20 + Math.random() * 0.08; 
+            forestColors[forestIdx + 2] = 0.10 + Math.random() * 0.06; 
+            forestIdx += 3;
+        }
+
+        // Foliage: 3 overlapping stacked clusters per tree for complex, organic shapes
+        const foliagePoints = pointsPerTree - trunkPoints;
+        const numClusters = 3;
+        const pointsPerCluster = Math.floor(foliagePoints / numClusters);
+
+        for (let c = 0; c < numClusters; c++) {
+            const cx = treeX + (Math.random() - 0.5) * 6;
+            const cy = 16 + c * 11 + (Math.random() - 0.5) * 5; // Stacked vertically
+            const cz = treeZ + (Math.random() - 0.5) * 6;
+            const radius = 6.5 + Math.random() * 6.5;
+
+            for (let p = 0; p < pointsPerCluster; p++) {
+                const u = Math.random();
+                const v = Math.random();
+                const theta = u * 2.0 * Math.PI;
+                const phi = Math.acos(2.0 * v - 1.0);
+                
+                const x = cx + radius * Math.sin(phi) * Math.cos(theta);
+                const y = cy + radius * Math.sin(phi) * Math.sin(theta);
+                const z = cz + radius * Math.cos(phi);
+
+                forestPositions[forestIdx] = x;
+                forestPositions[forestIdx + 1] = y;
+                forestPositions[forestIdx + 2] = z;
+
+                // Greens & Gold Highlights
+                const leafType = Math.random();
+                if (leafType < 0.65) {
+                    forestColors[forestIdx] = 0.10 + Math.random() * 0.10;     
+                    forestColors[forestIdx + 1] = 0.48 + Math.random() * 0.20; 
+                    forestColors[forestIdx + 2] = 0.14 + Math.random() * 0.10; 
+                } else if (leafType < 0.88) {
+                    forestColors[forestIdx] = 0.40 + Math.random() * 0.15;     
+                    forestColors[forestIdx + 1] = 0.62 + Math.random() * 0.15; 
+                    forestColors[forestIdx + 2] = 0.10 + Math.random() * 0.08; 
+                } else {
+                    forestColors[forestIdx] = 0.05 + Math.random() * 0.05;     
+                    forestColors[forestIdx + 1] = 0.30 + Math.random() * 0.10; 
+                    forestColors[forestIdx + 2] = 0.08 + Math.random() * 0.05; 
+                }
+                forestIdx += 3;
+            }
+        }
     }
 
-    // Fill remaining forest points with ambient ground/land points
+    // Fill remaining forest points with ambient ground points
     while (forestIdx < forestCount * 3) {
         const z = -Math.random() * 3200;
         const pathX = getPathX(z);
-        const x = pathX + (Math.random() - 0.5) * 120;
-        const y = -25 + (Math.random() - 0.5) * 2; // ground level at y=-25
+        const x = pathX + (Math.random() - 0.5) * 80;
+        const y = -25 + (Math.random() - 0.5) * 2;
 
         forestPositions[forestIdx] = x;
         forestPositions[forestIdx + 1] = y;
@@ -752,7 +632,7 @@ function initThreeParticles() {
     const forestPoints = new THREE.Points(forestGeometry, forestMaterial);
     scene.add(forestPoints);
 
-    // 2. Sea/Water Floor Particle Generation (Placed at the very bottom, y=-40)
+    // 2. Sea/Water Floor Particle Generation
     const seaGeometry = new THREE.BufferGeometry();
     const seaPositions = new Float32Array(seaCount * 3);
     const seaColors = new Float32Array(seaCount * 3);
@@ -762,7 +642,7 @@ function initThreeParticles() {
         const z = -Math.random() * 3200;
         const pathX = getPathX(z);
         const x = (Math.random() - 0.5) * 950 + pathX; // wide sea floor
-        const y = -40 + Math.sin(x * 0.02) * Math.cos(z * 0.025) * 8; // bottom-most sea floor at y=-40
+        const y = -25 + Math.sin(x * 0.02) * Math.cos(z * 0.025) * 9;
 
         seaPositions[seaIdx] = x;
         seaPositions[seaIdx + 1] = y;
@@ -806,7 +686,7 @@ function initThreeParticles() {
     const seaPoints = new THREE.Points(seaGeometry, seaMaterial);
     scene.add(seaPoints);
 
-    // 3. Mountain Ranges Particle Generation (Background/Sides, y=-30 to y=60)
+    // 3. Mountain Ranges Particle Generation
     const mountainGeometry = new THREE.BufferGeometry();
     const mountainPositions = new Float32Array(mountainCount * 3);
     const mountainColors = new Float32Array(mountainCount * 3);
@@ -822,7 +702,7 @@ function initThreeParticles() {
         const isLeft = m % 2 === 0;
         const x_center = pathX + (isLeft ? -200 - Math.random() * 80 : 200 + Math.random() * 80);
         const baseRadius = 180 + Math.random() * 100;
-        const peakHeight = 75 + Math.random() * 20; // peaks up to y=65 (under the clouds!)
+        const peakHeight = 95 + Math.random() * 75; // rising high from y = -25
 
         for (let p = 0; p < pointsPerMountain; p++) {
             const theta = Math.random() * Math.PI * 2;
@@ -833,8 +713,8 @@ function initThreeParticles() {
             
             // Cone shape + rugged noise
             const rawHeight = peakHeight * heightFactor;
-            const roughness = (Math.random() - 0.5) * 8 * (0.3 + heightFactor);
-            const py = -30 + rawHeight + roughness; // Base starts at y=-30
+            const roughness = (Math.random() - 0.5) * 10 * (0.3 + heightFactor);
+            const py = -25 + rawHeight + roughness;
 
             mountainPositions[mountainIdx] = px;
             mountainPositions[mountainIdx + 1] = py;
@@ -864,7 +744,7 @@ function initThreeParticles() {
     // Fill remaining mountain points
     while (mountainIdx < mountainCount * 3) {
         mountainPositions[mountainIdx] = (Math.random() - 0.5) * 800;
-        mountainPositions[mountainIdx + 1] = -30;
+        mountainPositions[mountainIdx + 1] = -25;
         mountainPositions[mountainIdx + 2] = -Math.random() * 3200;
         mountainColors[mountainIdx] = 0.12;
         mountainColors[mountainIdx + 1] = 0.25;
@@ -876,7 +756,7 @@ function initThreeParticles() {
     mountainGeometry.setAttribute('color', new THREE.BufferAttribute(mountainColors, 3));
 
     const mountainMaterial = new THREE.PointsMaterial({
-        size: isMobile ? 3.0 : 3.8,
+        size: isMobile ? 3.2 : 3.8,
         vertexColors: true,
         transparent: true,
         opacity: 0.86,
@@ -890,7 +770,7 @@ function initThreeParticles() {
     const mountainPoints = new THREE.Points(mountainGeometry, mountainMaterial);
     scene.add(mountainPoints);
 
-    // 4. Cloud Formations Particle Generation (High floating sky, y=95 to y=150)
+    // 4. Cloud Formations Particle Generation
     const cloudGeometry = new THREE.BufferGeometry();
     const cloudPositions = new Float32Array(cloudCount * 3);
     const cloudColors = new Float32Array(cloudCount * 3);
@@ -903,7 +783,7 @@ function initThreeParticles() {
         const z_center = -c * 270 - Math.random() * 80 - 100;
         const pathX = getPathX(z_center);
         const x_center = pathX + (Math.random() - 0.5) * 450;
-        const y_center = 95 + Math.random() * 35; // Clouds strictly at y=95 to y=130
+        const y_center = 90 + Math.random() * 45; // High floating clouds
 
         // A cloud is made of 5 overlapping blobs
         const numBlobs = 5;
@@ -968,13 +848,13 @@ function initThreeParticles() {
     const cloudPoints = new THREE.Points(cloudGeometry, cloudMaterial);
     scene.add(cloudPoints);
 
-    // 5. Stars & Moon Particle Generation (Very top of sky, y > 155)
+    // 5. Stars & Moon Particle Generation
     const starGeometry = new THREE.BufferGeometry();
     const starPositions = new Float32Array(starCount * 3);
     const starColors = new Float32Array(starCount * 3);
 
     const moonCountVal = isMobile ? 250 : 600;
-    const moonCenterPoint = { x: -95, y: 145, z: -1700 }; // Moon placed high up at y=145
+    const moonCenterPoint = { x: -95, y: 115, z: -1700 };
     const rMoon1 = 18;
     const moonOffsetX = 8;
     const moonOffsetY = 6;
@@ -1021,13 +901,13 @@ function initThreeParticles() {
         starIdx += 3;
     }
 
-    // Generate Sky Stars (strictly in the highest sky region, y > 155)
+    // Generate Sky Stars (strictly in the sky, y > 60)
     while (starIdx < starCount * 3) {
         const z = -Math.random() * 3200;
         const pathX = getPathX(z);
         
         starPositions[starIdx] = (Math.random() - 0.5) * 750 + pathX;
-        starPositions[starIdx + 1] = 155 + Math.random() * 180; // sky space from y=155 up to y=335
+        starPositions[starIdx + 1] = 60 + Math.random() * 220; // high sky
         starPositions[starIdx + 2] = z;
         
         const rType = Math.random();
@@ -1130,28 +1010,16 @@ function initThreeParticles() {
         if (state.isCanvasVisible) {
             const currentZ = camera.position.z;
             const pathCenterX = getPathX(currentZ);
-            const pathCenterY = getCameraY(currentZ);
             
-            // Target camera position with mouse parallax offsets
             const targetX = pathCenterX + mouseX;
-            const targetY = pathCenterY + mouseY;
+            const targetY = 8 + mouseY;
 
-            // Store previous camera X to compute roll bank angle
-            const oldX = camera.position.x;
+            camera.position.x += (targetX - camera.position.x) * 0.052;
+            camera.position.y += (targetY - camera.position.y) * 0.052;
 
-            camera.position.x += (targetX - camera.position.x) * 0.058;
-            camera.position.y += (targetY - camera.position.y) * 0.058;
-
-            // Camera look target with lead and subtle upward tilt offset (+10)
-            const lookAheadZ = currentZ - 90;
+            const lookAheadZ = currentZ - 60;
             const lookAheadX = getPathX(lookAheadZ);
-            const lookAheadY = getCameraY(lookAheadZ) + 10;
-            
-            camera.lookAt(lookAheadX, lookAheadY, lookAheadZ);
-
-            // Compute airplane/drone banking (roll) based on horizontal change
-            const roll = -(camera.position.x - oldX) * 0.16;
-            camera.rotation.z = Math.max(-0.25, Math.min(0.25, roll)); // Clamp bank roll angle to ~14 degrees
+            camera.lookAt(lookAheadX, 6, lookAheadZ);
 
             // Slow organic drifts
             forestPoints.rotation.z += 0.00010;
@@ -1167,7 +1035,7 @@ function initThreeParticles() {
                 const idx = s * 3;
                 const px = seaPositionsArray[idx];
                 const pz = seaPositionsArray[idx + 2];
-                seaPositionsArray[idx + 1] = -40 + Math.sin(px * 0.03 + time) * Math.cos(pz * 0.035 + time) * 2.0; // water waves centered at y=-40
+                seaPositionsArray[idx + 1] = -25 + Math.sin(px * 0.03 + time) * Math.cos(pz * 0.035 + time) * 2.0;
             }
             seaGeometry.attributes.position.needsUpdate = true;
 
