@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Darshil Singh | Student Portfolio</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="page-bg" aria-hidden="true">
+        <div class="canvas-dark-overlay"></div>
+        <canvas id="webgl-canvas"></canvas>
+        <video class="bg-video" autoplay muted loop playsinline poster="https://assets.mixkit.co/eobnthhpxvqjqclsk07rtt3fjakl">
+            <source src="https://assets.mixkit.co/hu698q7kx95o7e2e9933n4eu4zqv" type="video/mp4">
+            <source src="assets/bg-video.mp4" type="video/mp4">
+        </video>
+        <div class="bg-video-overlay"></div>
+        <div class="bg-grid"></div>
+        <div class="ambient ambient-1"></div>
+        <div class="ambient ambient-2"></div>
+        <div class="ambient ambient-3"></div>
+    </div>
+
+    <div class="cursor-dot" aria-hidden="true"></div>
+    <div class="cursor-ring" aria-hidden="true"></div>
+    <div class="mode-toast" aria-live="polite"></div>
+
+    <header class="navbar">
+        <nav class="nav-container">
+            <a href="#home" class="logo magnetic" aria-label="Darshil Singh home" title="Look closer.">DS</a>
+            <ul class="nav-links">
+                <li><a href="#home">Home</a></li>
+                <li><a href="#about">About Me</a></li>
+                <li><a href="#academic">Academic Work</a></li>
+                <li><a href="#achievements">Achievements</a></li>
+                <li><a href="#co-curricular">Co-Curriculars</a></li>
+                <li><a href="#reflection">Reflection</a></li>
+                <li><a href="#memories">Memories</a></li>
+            </ul>
+            <button class="menu-toggle magnetic" type="button" aria-label="Toggle navigation" aria-expanded="false">
+                <i class="fas fa-bars"></i>
+            </button>
+        </nav>
+    </header>
+
+    <main>
+        <section id="home" class="hero section-shell">
+            <div class="container hero-layout">
+                <div class="hero-copy reveal tilt-surface" data-tilt-depth="14">
+                    <div class="hero-topline">
+                        <span class="eyebrow">My Student Portfolio</span>
+                        <span class="status-pill magnetic">
+                            <span class="status-glow"></span>
+                            Available for growth
+                        </span>
+                    </div>
+                    <h1 class="main-title">Darshil Singh</h1>
+                    <p class="tagline">Class X student with a strong interest in logic, science, and disciplined growth.</p>
+                    <p class="hero-description">
+                        A cinematic portfolio experience that reflects my academic journey, achievements, curiosity,
+                        and future aspirations with clarity, structure, and calm confidence.
+                    </p>
+                    <div class="hero-actions">
+                        <a href="#about" class="button button-primary magnetic">Explore Portfolio</a>
+                        <a href="#academic" class="button button-secondary magnetic">View Academic Work</a>
+                        <a href="assets/Darshil-Singh-CV.html" class="button button-secondary magnetic" download>Download CV</a>
+                    </div>
+                    <div class="hero-contact glass-panel reveal" data-delay="160">
+                        <a href="mailto:darshilsingh37@gmail.com" class="contact-chip magnetic">
+                            <i class="fas fa-envelope"></i>
+                            darshilsingh37@gmail.com
+                        </a>
+                        <a href="https://github.com/darshilsingh37-commits" class="contact-chip magnetic" target="_blank" rel="noreferrer">
+                            <i class="fab fa-github"></i>
+                            darshilsingh37-commits
+                        </a>
+                    </div>
+                    <div class="hero-quote glass-panel">
+                        <span>"Building ideas into reality."</span>
+                    </div>
+                </div>
+
+                <div class="hero-stack reveal" data-delay="120">
+                    <div class="hero-panel glass-panel tilt-surface" data-tilt-depth="18">
+                        <p class="panel-label">Profile</p>
+                        <h2>Student of Xth Standard at <span>Gayatri Public School</span></h2>
+                        <div class="metric-row">
+                            <div class="metric-chip magnetic">
+                                <strong>2026-27</strong>
+                                <span>Academic year</span>
+                            </div>
+                            <div class="metric-chip magnetic">
+                                <strong>Class X-B</strong>
+                                <span>Current level</span>
+                            </div>
+                            <div class="metric-chip magnetic">
+                                <strong>Focused</strong>
+                                <span>Mindset</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="hero-card glass-panel tilt-surface" data-tilt-depth="16">
+                        <p class="panel-label">Core strengths</p>
+                        <div class="hero-tags">
+                            <span>Problem Solver</span>
+                            <span>Logical Thinker</span>
+                            <span>Curious Learner</span>
+                            <span>Disciplined</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <a href="#about" class="scroll-indicator magnetic" aria-label="Scroll to About section">
+                <span></span>
+                Scroll
+            </a>
+        </section>
+
+        <section id="about" class="section section-shell reveal" data-section-tone="dark">
+            <div class="container">
+                <div class="section-intro">
+                    <span class="eyebrow">About Me</span>
+                    <h2 class="section-heading">Focused on learning with depth, clarity, and purpose.</h2>
+                </div>
+                <div class="about-grid">
+                    <article class="about-card glass-panel tilt-surface" data-tilt-depth="12">
+                        <div class="about-text">
+                            <p>Hello! I am Darshil Singh, a student of Class X-B at Gayatri Public School. I am a curious learner who enjoys exploring concepts that challenge my thinking and expand my understanding of the world.</p>
+                            <p>Among academic subjects, I have a strong interest in Physics and Chemistry because I enjoy understanding how scientific principles explain real-life phenomena. I like solving logical problems and learning about how things work at a deeper level.</p>
+                            <p>Apart from academics, I enjoy reading manga and psychological thriller novels, as they improve my imagination, analytical thinking, and creativity. I am also interested in swimming, which helps me stay disciplined, active, and focused.</p>
+                            <p>I believe in continuous self-improvement and always try to develop new skills, gain knowledge, and grow both academically and personally. My goal is to become a knowledgeable and capable individual who can use creativity and problem-solving skills to make a positive impact in the future.</p>
+                        </div>
+                    </article>
+                    <aside class="about-side">
+                        <div class="info-card glass-panel tilt-surface" data-tilt-depth="10">
+                            <p class="panel-label">Highlights</p>
+                            <ul class="detail-list">
+                                <li>Strong interest in Physics and Chemistry</li>
+                                <li>Enjoys logical problem-solving and deep understanding</li>
+                                <li>Builds creativity through reading and analytical storytelling</li>
+                                <li>Maintains discipline through swimming and structured learning</li>
+                            </ul>
+                        </div>
+                        <div class="info-card glass-panel tilt-surface" data-tilt-depth="10">
+                            <p class="panel-label">Vision</p>
+                            <p>To grow into a knowledgeable, capable, and responsible individual who can create a positive impact through creativity, learning, and problem-solving.</p>
+                        </div>
+                    </aside>
+                </div>
+            </div>
+        </section>
+
+        <section id="academic" class="section section-shell reveal">
+            <div class="container">
+                <div class="section-intro">
+                    <span class="eyebrow">Academic Work</span>
+                    <h2 class="section-heading">Projects, assignments, presentations, and practical learning.</h2>
+                    <p class="section-subheading">Each subject strengthens a different part of my analytical and creative thinking.</p>
+                </div>
+
+                <div class="academic-grid">
+                    <article class="card glass-panel tilt-surface" data-tilt-depth="14">
+                        <div class="card-icon"><i class="fas fa-atom"></i></div>
+                        <h3>Science</h3>
+                        <p>This section includes my academic work related to Science. This subject has helped me develop analytical thinking, curiosity, and problem-solving skills.</p>
+                        <h4>Included Work</h4>
+                        <ul>
+                            <li>Physics assignments and numerical problems</li>
+                            <li>Practical and lab activities</li>
+                            <li>Science project work</li>
+                            <li>Multiple assessments (SEA)</li>
+                        </ul>
+                    </article>
+
+                    <article class="card glass-panel tilt-surface" data-tilt-depth="14">
+                        <div class="card-icon"><i class="fas fa-square-root-variable"></i></div>
+                        <h3>Mathematics</h3>
+                        <p>Mathematics has helped me improve logical reasoning and accuracy. I have developed better problem-solving techniques and confidence in calculations.</p>
+                        <h4>Included Work</h4>
+                        <ul>
+                            <li>Class assignments</li>
+                            <li>Group activities proving various theorems</li>
+                            <li>Graph activities</li>
+                            <li>Multiple assessments (SEA)</li>
+                            <li>Lab activities</li>
+                        </ul>
+                    </article>
+
+                    <article class="card glass-panel tilt-surface" data-tilt-depth="14">
+                        <div class="card-icon"><i class="fas fa-globe-americas"></i></div>
+                        <h3>Social Science</h3>
+                        <p>Social Science has helped me understand history, geography, political systems, and economic development. I have developed a better understanding of society.</p>
+                        <h4>Included Work</h4>
+                        <ul>
+                            <li>Map work and geography activities</li>
+                            <li>History assignments and projects</li>
+                            <li>Civics and Economics notes</li>
+                            <li>Presentations and class activities</li>
+                            <li>Multiple assessments and group activities</li>
+                        </ul>
+                    </article>
+
+                    <article class="card glass-panel tilt-surface" data-tilt-depth="14">
+                        <div class="card-icon"><i class="fas fa-book-open"></i></div>
+                        <h3>English</h3>
+                        <p>The English section highlights my language skills through essays, creative writing, and presentations, improving my vocabulary and confidence.</p>
+                        <h4>Included Work</h4>
+                        <ul>
+                            <li>Creative writing and essays</li>
+                            <li>Poems</li>
+                            <li>Grammar projects</li>
+                            <li>Presentations</li>
+                            <li>Reading activities</li>
+                        </ul>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <section id="achievements" class="section section-shell reveal" data-section-tone="soft">
+            <div class="container">
+                <div class="section-intro">
+                    <span class="eyebrow">Achievements</span>
+                    <h2 class="section-heading">Certificates, awards, competitions, and recognitions.</h2>
+                    <p class="description-text">Participating in competitions and activities has helped me build confidence, discipline, analytical thinking, and stronger problem-solving abilities.</p>
+                </div>
+
+                <div class="achievements-grid">
+                    <article class="achievement-card glass-panel tilt-surface reveal" data-tilt-depth="12" data-delay="40">
+                        <div class="certificate-image">
+                            <img src="images/WhatsApp Image 2026-05-30 at 11s.37.45.jpeg" alt="NSO Certificate 2022">
+                        </div>
+                        <div class="achievement-info">
+                            <h4>National Science Olympiad (NSO)</h4>
+                            <p>Participated in 2022</p>
+                        </div>
+                    </article>
+
+                    <article class="achievement-card glass-panel tilt-surface reveal" data-tilt-depth="12" data-delay="80">
+                        <div class="certificate-image">
+                            <img src="images/WhatsApp Image 2026-05-30 at 11.37s.44.jpeg" alt="NSO School Rank 1">
+                        </div>
+                        <div class="achievement-info">
+                            <h4>National Science Olympiad (NSO)</h4>
+                            <p>School Rank 1 in 2024</p>
+                        </div>
+                    </article>
+
+                    <article class="achievement-card glass-panel tilt-surface reveal" data-tilt-depth="12" data-delay="120">
+                        <div class="certificate-image">
+                            <img src="images/WhatsApp Image 2026-0s5-30 at 11.37.44.jpeg" alt="Science Quiz Award" class="cert-fix">
+                        </div>
+                        <div class="achievement-info">
+                            <h4>Interschool Science Quiz</h4>
+                            <p>Won 2nd Prize</p>
+                        </div>
+                    </article>
+
+                    <article class="achievement-card glass-panel tilt-surface reveal" data-tilt-depth="12" data-delay="160">
+                        <div class="certificate-image">
+                            <img src="images/WhatsApp Image 2026-05-30 at 11.37.44.jpeg" alt="Sanskriti Gyan 3rd Prize">
+                        </div>
+                        <div class="achievement-info">
+                            <h4>Sanskriti Gyan Pariksha</h4>
+                            <p>Won 3rd Prize</p>
+                        </div>
+                    </article>
+
+                    <article class="achievement-card glass-panel tilt-surface reveal" data-tilt-depth="12" data-delay="200">
+                        <div class="certificate-image">
+                            <img src="images/WhatsApp Imasge 2026-05-30 at 11.37.45.jpeg" alt="Sanskriti Gyan 1st Prize">
+                        </div>
+                        <div class="achievement-info">
+                            <h4>Sanskriti Gyan Pariksha</h4>
+                            <p>Won 1st Prize</p>
+                        </div>
+                    </article>
+
+                    <article class="achievement-card glass-panel tilt-surface reveal" data-tilt-depth="12" data-delay="240">
+                        <div class="certificate-image">
+                            <img src="images/WhatsApp Image 2026-05-30 at 11.37.46.jpegs.jpeg" alt="Sanskriti Gyan 2nd Prize">
+                        </div>
+                        <div class="achievement-info">
+                            <h4>Sanskriti Gyan Pariksha</h4>
+                            <p>Won 2nd Prize</p>
+                        </div>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <section id="co-curricular" class="section section-shell reveal">
+            <div class="container">
+                <div class="section-intro">
+                    <span class="eyebrow">Co-Curricular Activities</span>
+                    <h2 class="section-heading">Participation and learning beyond academics.</h2>
+                </div>
+                <div class="content-box glass-panel tilt-surface" data-tilt-depth="10">
+                    <p>Co-curricular activities help students develop confidence, creativity, teamwork, and communication skills. I was a member of the School Cyber Club in Class VIII, where I explored technology-related activities and improved my digital awareness and problem-solving skills.</p>
+                    <p>I also participated in school assembly presentations during Classes VI and VII. These activities helped me improve my public speaking skills, confidence, and stage presence. Through these experiences, I learned discipline, coordination, and the value of participating actively in school activities.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="reflection" class="section section-shell reveal" data-section-tone="dark">
+            <div class="container">
+                <div class="section-intro">
+                    <span class="eyebrow">Reflection</span>
+                    <h2 class="section-heading">Strengths, growth areas, and future aspirations.</h2>
+                </div>
+                <div class="reflection-content">
+                    <article class="reflection-card glass-panel tilt-surface" data-tilt-depth="10">
+                        <p>This academic year has been a year of learning, growth, and self-improvement for me. I developed a deeper interest in subjects like Physics and Mathematics, especially in understanding higher-level concepts and logical problem-solving. Exploring new ideas and learning beyond the classroom helped me improve my analytical thinking and curiosity towards knowledge.</p>
+                        <p>One of my strengths is my dedication towards studies and my ability to think logically while solving problems. I enjoy understanding concepts in depth rather than only memorizing them. I also try to stay disciplined and focused on my academic goals.</p>
+                        <p>At the same time, I understand that there are areas where I can improve. I would like to become better at working in teams and participating more actively in group activities. I believe improving my communication and teamwork skills will help me grow as a student and as a person.</p>
+                        <p>In the future, I want to continue learning new things, improve my skills, and build a successful and peaceful life. I hope to become a knowledgeable, responsible, and confident individual who can contribute positively to society.</p>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <section id="memories" class="section section-shell reveal">
+            <div class="container">
+                <div class="section-intro">
+                    <span class="eyebrow">Memories</span>
+                    <h2 class="section-heading">Moments that shape the journey.</h2>
+                </div>
+                <div class="memories-grid">
+                    <figure class="memory-card glass-panel tilt-surface" data-tilt-depth="10">
+                        <img src="images/memory_gps.png" alt="Gayatri Public School Memory">
+                    </figure>
+                    <figure class="memory-card glass-panel tilt-surface" data-tilt-depth="10">
+                        <img src="images/memory_sachdeva.png" alt="Sachdeva Millennium Memory">
+                    </figure>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div class="container footer-inner glass-panel tilt-surface" data-tilt-depth="8">
+            <p>&copy; 2026 Darshil Singh. All Rights Reserved.</p>
+            <div class="footer-links">
+                <a href="mailto:darshilsingh37@gmail.com">darshilsingh37@gmail.com</a>
+                <a href="https://github.com/darshilsingh37-commits" target="_blank" rel="noreferrer">GitHub</a>
+                <a href="assets/Darshil-Singh-CV.html" download>Download CV</a>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
